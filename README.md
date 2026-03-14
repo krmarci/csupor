@@ -37,7 +37,9 @@ mysql -u root -p < sql/schema.sql
    ```bash
    cp .env.example .env
    # edit values as needed
-   export $(cat .env | xargs)
+   set -a
+   source .env
+   set +a
    ```
 4. Run app:
    ```bash
@@ -52,6 +54,12 @@ Tables are created automatically on startup.
 ### MySQL error 1045 (Access denied for user)
 
 If startup fails with `1045, "Access denied for user ..."`, your credentials in the connection string are incorrect.
+
+If the error ends with `(using password: NO)`, your app is connecting **without any password**. In this project, that means either:
+- `MYSQL_PASSWORD` is unset/empty, or
+- `DATABASE_URL` does not include `:password@`.
+
+Also note: `export $(cat .env | xargs)` can silently break values that contain special characters (such as `#`, `$`, spaces), causing `MYSQL_PASSWORD` to load incorrectly. Prefer `source .env` (shown above).
 
 Use one of these approaches:
 
