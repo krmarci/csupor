@@ -1,1 +1,71 @@
 # csupor
+
+Flask-based login and personnel data management system backed by MySQL schema `csupor`.
+
+## Features
+
+- Login using **e-mail or username + password**.
+- Registration using **e-mail, username, password**.
+- User privilege enum: `employee`, `hr`, `ceo`, `developer`.
+- Numeric ascending user ID using MySQL auto-increment primary key.
+- Additional personnel profile data after registration.
+- Dependents management.
+- Educational qualifications management (multiple records supported).
+- Optional teacher professional exam record.
+
+
+## SQL schema file
+
+An explicit MySQL schema script is available at `sql/schema.sql`.
+You can run it directly, for example:
+
+```bash
+mysql -u root -p < sql/schema.sql
+```
+
+## Setup
+
+1. Create database schema:
+   ```sql
+   CREATE DATABASE csupor;
+   ```
+2. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+3. Configure environment:
+   ```bash
+   cp .env.example .env
+   # edit values as needed
+   export $(cat .env | xargs)
+   ```
+4. Run app:
+   ```bash
+   python run.py
+   ```
+
+Tables are created automatically on startup.
+
+
+## Troubleshooting
+
+### MySQL error 1045 (Access denied for user)
+
+If startup fails with `1045, "Access denied for user ..."`, your credentials in the connection string are incorrect.
+
+Use one of these approaches:
+
+1. Set full URL:
+   ```bash
+   export DATABASE_URL='mysql+pymysql://root:YOUR_REAL_PASSWORD@localhost:3306/csupor'
+   ```
+2. Or set split MySQL variables:
+   ```bash
+   export MYSQL_USER=root
+   export MYSQL_PASSWORD='YOUR_REAL_PASSWORD'  # leave empty if your root user has no password
+   export MYSQL_HOST=localhost
+   export MYSQL_PORT=3306
+   export MYSQL_DATABASE=csupor
+   ```
+
+`DATABASE_URL` takes precedence when both are set.

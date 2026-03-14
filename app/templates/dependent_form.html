@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Add dependent</h1>
+<form method="post">
+  <label>Name <input name="name" required></label>
+  <label>Date of birth <input type="date" name="date_of_birth" required></label>
+  <label>Social security number (9 digits) <input name="social_security_number" required></label>
+  <label>Start of dependency <input type="date" name="dependency_start" required></label>
+  <label>Disability <input name="disability"></label>
+  <button type="submit">Save dependent</button>
+</form>
+{% endblock %}
