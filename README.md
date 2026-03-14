@@ -13,6 +13,16 @@ Flask-based login and personnel data management system backed by MySQL schema `c
 - Educational qualifications management (multiple records supported).
 - Optional teacher professional exam record.
 
+
+## SQL schema file
+
+An explicit MySQL schema script is available at `sql/schema.sql`.
+You can run it directly, for example:
+
+```bash
+mysql -u root -p < sql/schema.sql
+```
+
 ## Setup
 
 1. Create database schema:
