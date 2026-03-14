@@ -27,7 +27,7 @@ def _build_database_uri() -> str:
     if mysql_password:
         auth = f"{auth}:{quote_plus(mysql_password)}"
 
-    return f"mysql+pymysql://{auth}@{mysql_host}:{mysql_port}/{mysql_db}"
+    return f"mysql+mysqlconnector://{auth}@{mysql_host}:{mysql_port}/{mysql_db}"
 
 
 def create_app() -> Flask:

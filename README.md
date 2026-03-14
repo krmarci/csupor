@@ -57,7 +57,7 @@ Use one of these approaches:
 
 1. Set full URL:
    ```bash
-   export DATABASE_URL='mysql+pymysql://root:YOUR_REAL_PASSWORD@localhost:3306/csupor'
+   export DATABASE_URL='mysql+mysqlconnector://root:YOUR_REAL_PASSWORD@localhost:3306/csupor'
    ```
 2. Or set split MySQL variables:
    ```bash
