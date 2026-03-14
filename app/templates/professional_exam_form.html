@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Teacher professional exam (optional)</h1>
+<p>Leave all fields empty and submit to remove current exam.</p>
+<form method="post">
+  <label>Name of qualification <input name="qualification_name" value="{{ exam.qualification_name or '' }}"></label>
+  <label>Year obtained <input type="number" name="year_obtained" value="{{ exam.year_obtained or '' }}"></label>
+  <label>Degree number <input name="degree_number" value="{{ exam.degree_number or '' }}"></label>
+  <button type="submit">Save professional exam</button>
+</form>
+{% endblock %}
