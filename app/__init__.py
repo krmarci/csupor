@@ -1,9 +1,13 @@
 import os
 from urllib.parse import quote_plus
 
+from dotenv import load_dotenv
 from flask import Flask
 from flask_login import LoginManager
 from flask_sqlalchemy import SQLAlchemy
+
+
+load_dotenv()
 
 
 db = SQLAlchemy()
