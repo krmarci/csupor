@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Dashboard</h1>
+<p>User ID: <strong>{{ current_user.id }}</strong></p>
+<p>Logged in as: <strong>{{ current_user.username }}</strong> ({{ current_user.privilege.value }})</p>
+
+<div class="card">
+  <h2>Profile</h2>
+  {% if current_user.profile and current_user.profile.full_name %}
+    <p>Name: {{ current_user.profile.full_name }}</p>
+  {% else %}
+    <p>Profile not completed yet.</p>
+  {% endif %}
+  <a href="{{ url_for('edit_profile') }}">Edit profile</a>
+</div>
+
+<div class="card">
+  <h2>Dependents</h2>
+  <a href="{{ url_for('add_dependent') }}">Add dependent</a>
+  {% if current_user.dependents %}
+  <table>
+    <tr><th>Name</th><th>DOB</th><th>SSN</th><th>Dependency start</th><th>Disability</th></tr>
+    {% for dep in current_user.dependents %}
+    <tr><td>{{ dep.name }}</td><td>{{ dep.date_of_birth }}</td><td>{{ dep.social_security_number }}</td><td>{{ dep.dependency_start }}</td><td>{{ dep.disability or '' }}</td></tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>Educational qualifications</h2>
+  <a href="{{ url_for('add_qualification') }}">Add qualification</a>
+  {% if current_user.qualifications %}
+  <table>
+    <tr><th>Type</th><th>Name</th><th>Institution</th><th>Degree #</th><th>Year</th><th>Highest</th></tr>
+    {% for q in current_user.qualifications %}
+    <tr><td>{{ q.level_or_type }}</td><td>{{ q.qualification_name }}</td><td>{{ q.institution_name }}</td><td>{{ q.degree_number }}</td><td>{{ q.year_obtained }}</td><td>{{ 'Yes' if q.highest else 'No' }}</td></tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>Teacher professional exam (optional)</h2>
+  <a href="{{ url_for('professional_exam') }}">Edit professional exam</a>
+  {% if current_user.professional_exam %}
+  <p>{{ current_user.professional_exam.qualification_name }} - {{ current_user.professional_exam.year_obtained }} ({{ current_user.professional_exam.degree_number }})</p>
+  {% else %}
+  <p>No professional exam recorded.</p>
+  {% endif %}
+</div>
+{% endblock %}

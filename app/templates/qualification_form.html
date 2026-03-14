@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Add educational qualification</h1>
+<form method="post">
+  <label>Level/type of qualification <input name="level_or_type" required></label>
+  <label>Name of qualification <input name="qualification_name" required></label>
+  <label>Name of institution <input name="institution_name" required></label>
+  <label>Degree number <input name="degree_number" required></label>
+  <label>Year obtained <input type="number" name="year_obtained" required></label>
+  <label><input type="checkbox" name="highest"> Highest qualification</label>
+  <button type="submit">Save qualification</button>
+</form>
+{% endblock %}
