@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · CSUPOR Portal{% endblock %}
+{% block content %}
+<section class="hero">
+  <div class="hero-copy">
+    <span class="eyebrow">Unified employee workspace</span>
+    <h1>Welcome back, {{ current_user.profile.full_name if current_user.profile and current_user.profile.full_name else current_user.username }}.</h1>
+    <p>
+      Keep personal records, family data, educational milestones, and professional credentials organized in one
+      elegant workspace designed for fast updates and clear visibility.
+    </p>
+    <div class="hero-actions">
+      <a class="button button-primary" href="{{ url_for('edit_profile') }}">Update profile</a>
+      <a class="button button-secondary" href="{{ url_for('add_qualification') }}">Add qualification</a>
+      <a class="button button-secondary" href="{{ url_for('add_dependent') }}">Add dependent</a>
+    </div>
+  </div>
+  <aside class="hero-panel">
+    <span class="badge">Account snapshot</span>
+    <div>
+      <strong>{{ current_user.username }}</strong>
+      <div class="nav-meta">User ID {{ current_user.id }} · {{ current_user.privilege.value|upper }}</div>
+    </div>
+    <ul>
+      <li>Profile completion is centralized for easier annual HR updates.</li>
+      <li>Dependents and qualifications are visible at a glance with cleaner summaries.</li>
+      <li>Professional exam records can be updated anytime from a dedicated form.</li>
+    </ul>
+  </aside>
+</section>
+
+<section class="layout-stack">
+  <div class="stats-grid">
+    <article class="stat-card">
+      <div class="stat-icon">👤</div>
+      <div class="stat-copy">
+        <span>Profile status</span>
+        <strong>{{ 'Complete' if current_user.profile and current_user.profile.full_name else 'Needs review' }}</strong>
+      </div>
+    </article>
+    <article class="stat-card">
+      <div class="stat-icon">👨‍👩‍👧</div>
+      <div class="stat-copy">
+        <span>Dependents</span>
+        <strong>{{ current_user.dependents|length }}</strong>
+      </div>
+    </article>
+    <article class="stat-card">
+      <div class="stat-icon">🎓</div>
+      <div class="stat-copy">
+        <span>Qualifications</span>
+        <strong>{{ current_user.qualifications|length }}</strong>
+      </div>
+    </article>
+  </div>
+
+  <div class="dashboard-grid">
+    <section class="card span-7">
+      <div class="section-heading">
+        <div>
+          <h2>Profile overview</h2>
+          <p>Your essential employee details, highlighted in a clean summary layout.</p>
+        </div>
+        <a class="button button-secondary" href="{{ url_for('edit_profile') }}">Edit profile</a>
+      </div>
+
+      {% if current_user.profile and current_user.profile.full_name %}
+      <dl class="data-list">
+        <div>
+          <dt>Full name</dt>
+          <dd>{{ current_user.profile.full_name }}</dd>
+        </div>
+        <div>
+          <dt>Name at birth</dt>
+          <dd>{{ current_user.profile.name_at_birth or '—' }}</dd>
+        </div>
+        <div>
+          <dt>Date of birth</dt>
+          <dd>{{ current_user.profile.date_of_birth or '—' }}</dd>
+        </div>
+        <div>
+          <dt>Place of birth</dt>
+          <dd>{{ current_user.profile.place_of_birth or '—' }}</dd>
+        </div>
+        <div>
+          <dt>Phone</dt>
+          <dd>{{ current_user.profile.phone_number or '—' }}</dd>
+        </div>
+        <div>
+          <dt>Marital status</dt>
+          <dd>{{ current_user.profile.marital_status or '—' }}</dd>
+        </div>
+      </dl>
+      {% else %}
+      <div class="empty-state">
+        Your profile has not been completed yet. Add your personal and contact information to make the portal more useful.
+      </div>
+      {% endif %}
+    </section>
+
+    <section class="card span-5">
+      <div class="section-heading">
+        <div>
+          <h2>Professional exam</h2>
+          <p>Optional teaching certification or professional exam details.</p>
+        </div>
+        <a class="button button-secondary" href="{{ url_for('professional_exam') }}">Manage exam</a>
+      </div>
+
+      {% if current_user.professional_exam %}
+      <div class="info-stack">
+        <div class="mini-card">
+          <div class="muted">Qualification</div>
+          <strong>{{ current_user.professional_exam.qualification_name }}</strong>
+        </div>
+        <div class="mini-card">
+          <div class="muted">Year obtained</div>
+          <strong>{{ current_user.professional_exam.year_obtained }}</strong>
+        </div>
+        <div class="mini-card">
+          <div class="muted">Degree number</div>
+          <strong>{{ current_user.professional_exam.degree_number }}</strong>
+        </div>
+      </div>
+      {% else %}
+      <div class="empty-state">
+        No professional exam is recorded yet. Use the dedicated form to add it now or come back later.
+      </div>
+      {% endif %}
+    </section>
+
+    <section class="table-card span-7">
+      <div class="section-heading">
+        <div>
+          <h2>Dependents</h2>
+          <p>Track household and dependent details in a more readable, responsive table.</p>
+        </div>
+        <a class="button button-primary" href="{{ url_for('add_dependent') }}">Add dependent</a>
+      </div>
+
+      {% if current_user.dependents %}
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Date of birth</th>
+              <th>SSN</th>
+              <th>Dependency start</th>
+              <th>Disability</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for dep in current_user.dependents %}
+            <tr>
+              <td><strong>{{ dep.name }}</strong></td>
+              <td>{{ dep.date_of_birth }}</td>
+              <td>{{ dep.social_security_number }}</td>
+              <td>{{ dep.dependency_start }}</td>
+              <td>{{ dep.disability or '—' }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-state">
+        No dependents have been added yet. Add one to keep benefit-related records complete.
+      </div>
+      {% endif %}
+    </section>
+
+    <section class="card span-5">
+      <div class="section-heading">
+        <div>
+          <h2>Qualifications</h2>
+          <p>Review academic achievements and highlight the highest completed credential.</p>
+        </div>
+        <a class="button button-primary" href="{{ url_for('add_qualification') }}">Add qualification</a>
+      </div>
+
+      {% if current_user.qualifications %}
+      <div class="record-list">
+        {% for q in current_user.qualifications %}
+        <article class="record-item">
+          <div class="record-item-header">
+            <div>
+              <h3>{{ q.qualification_name }}</h3>
+              <p>{{ q.institution_name }}</p>
+            </div>
+            {% if q.highest %}
+            <span class="pill">Highest</span>
+            {% endif %}
+          </div>
+          <div class="record-meta">
+            <span class="badge">{{ q.level_or_type }}</span>
+            <span class="badge">Degree # {{ q.degree_number }}</span>
+            <span class="badge">{{ q.year_obtained }}</span>
+          </div>
+        </article>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state">
+        No educational qualifications are listed yet. Add your latest degree or certification to get started.
+      </div>
+      {% endif %}
+    </section>
+
+    {% if can_manage_privileges %}
+    <section class="card span-12">
+      <div class="section-heading">
+        <div>
+          <h2>Privilege management</h2>
+          <p>HR and CEO users can update role assignments for newly registered accounts.</p>
+        </div>
+        <a class="button button-secondary" href="{{ url_for('manage_privileges') }}">Open privilege manager</a>
+      </div>
+      <div class="empty-state">
+        Access advanced user-role administration from the dedicated management page with the same visual system as the rest of the portal.
+      </div>
+    </section>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

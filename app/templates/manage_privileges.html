@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Manage Privileges · CSUPOR Portal{% endblock %}
+{% block content %}
+<section class="hero">
+  <div class="hero-copy">
+    <span class="eyebrow">Administrative controls</span>
+    <h1>Manage user privileges with confidence.</h1>
+    <p>
+      Review registered users and assign supported privileges through a streamlined interface built for HR and executive workflows.
+    </p>
+  </div>
+  <aside class="hero-panel">
+    <span class="badge">Access rules</span>
+    <ul>
+      <li>Only users with the <strong>hr</strong> or <strong>ceo</strong> privilege can access this page.</li>
+      <li>Changes take effect as soon as the new privilege is saved.</li>
+      <li>Use this page after registration to elevate or revise user access.</li>
+    </ul>
+  </aside>
+</section>
+
+<section class="layout-stack">
+  <section class="table-card">
+    <div class="section-heading">
+      <div>
+        <h2>User privilege management</h2>
+        <p>Assign employee, HR, CEO, or developer access from a modernized table layout.</p>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>User ID</th>
+            <th>Username</th>
+            <th>E-mail</th>
+            <th>Current privilege</th>
+            <th>Assign privilege</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for user in users %}
+          <tr>
+            <td>{{ user.id }}</td>
+            <td><strong>{{ user.username }}</strong></td>
+            <td>{{ user.email }}</td>
+            <td><span class="badge">{{ user.privilege.value }}</span></td>
+            <td>
+              <form method="post" class="inline-form">
+                <input type="hidden" name="user_id" value="{{ user.id }}">
+                <select name="privilege">
+                  {% for privilege in privileges %}
+                  <option value="{{ privilege.value }}" {% if user.privilege == privilege %}selected{% endif %}>{{ privilege.value }}</option>
+                  {% endfor %}
+                </select>
+                <button type="submit">Save</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</section>
+{% endblock %}
