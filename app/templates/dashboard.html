@@ -49,4 +49,12 @@
   <p>No professional exam recorded.</p>
   {% endif %}
 </div>
+
+{% if can_manage_privileges %}
+<div class="card">
+  <h2>User privilege management</h2>
+  <p>HR and CEO users can assign privileges after registration.</p>
+  <a href="{{ url_for('manage_privileges') }}">Manage user privileges</a>
+</div>
+{% endif %}
 {% endblock %}

@@ -21,6 +21,9 @@
       {% if current_user.is_authenticated %}
       <a href="{{ url_for('dashboard') }}">Dashboard</a>
       <a href="{{ url_for('edit_profile') }}">Edit profile</a>
+      {% if current_user.privilege.value in ['hr', 'ceo'] %}
+      <a href="{{ url_for('manage_privileges') }}">Manage privileges</a>
+      {% endif %}
       <a href="{{ url_for('logout') }}">Logout</a>
       {% else %}
       <a href="{{ url_for('login') }}">Login</a>

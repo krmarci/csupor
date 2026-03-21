@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Manage user privileges</h1>
+<p>Only users with the <strong>hr</strong> or <strong>ceo</strong> privilege can access this page.</p>
+<table>
+  <tr>
+    <th>User ID</th>
+    <th>Username</th>
+    <th>E-mail</th>
+    <th>Current privilege</th>
+    <th>Assign privilege</th>
+  </tr>
+  {% for user in users %}
+  <tr>
+    <td>{{ user.id }}</td>
+    <td>{{ user.username }}</td>
+    <td>{{ user.email }}</td>
+    <td>{{ user.privilege.value }}</td>
+    <td>
+      <form method="post">
+        <input type="hidden" name="user_id" value="{{ user.id }}">
+        <select name="privilege">
+          {% for privilege in privileges %}
+          <option value="{{ privilege.value }}" {% if user.privilege == privilege %}selected{% endif %}>{{ privilege.value }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit">Save</button>
+      </form>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}

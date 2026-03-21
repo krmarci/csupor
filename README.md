@@ -5,7 +5,8 @@ Flask-based login and personnel data management system backed by MySQL schema `c
 ## Features
 
 - Login using **e-mail or username + password**.
-- Registration using **e-mail, username, password**.
+- Registration using **e-mail, username, password** with the default `employee` privilege.
+- User privileges can later be assigned by users with the `hr` or `ceo` privilege.
 - User privilege enum: `employee`, `hr`, `ceo`, `developer`.
 - Numeric ascending user ID using MySQL auto-increment primary key.
 - Additional personnel profile data after registration.
