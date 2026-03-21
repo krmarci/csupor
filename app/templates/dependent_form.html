@@ -1,12 +1,55 @@
 {% extends "base.html" %}
+{% block title %}Add Dependent · CSUPOR Portal{% endblock %}
 {% block content %}
-<h1>Add dependent</h1>
-<form method="post">
-  <label>Name <input name="name" required></label>
-  <label>Date of birth <input type="date" name="date_of_birth" required></label>
-  <label>Social security number (9 digits) <input name="social_security_number" required></label>
-  <label>Start of dependency <input type="date" name="dependency_start" required></label>
-  <label>Disability <input name="disability"></label>
-  <button type="submit">Save dependent</button>
-</form>
+<section class="form-page">
+  <aside class="form-sidebar">
+    <span class="eyebrow">Family records</span>
+    <h2>Add a dependent record.</h2>
+    <p>
+      Capture dependent information in a guided, modern form so benefits-related data remains complete and accessible.
+    </p>
+    <ul>
+      <li>Enter the social security number using exactly nine digits.</li>
+      <li>Use the dependency start date that matches your official records.</li>
+      <li>Optional disability information can be added for context.</li>
+    </ul>
+  </aside>
+
+  <section class="form-shell">
+    <div class="section-heading">
+      <div>
+        <h2>Add dependent</h2>
+        <p>Create a new dependent entry for your employee record.</p>
+      </div>
+    </div>
+    <form method="post">
+      <div class="form-grid">
+        <div class="field field-full">
+          <label for="name">Name</label>
+          <input id="name" name="name" required placeholder="Dependent full name">
+        </div>
+        <div class="field">
+          <label for="date_of_birth">Date of birth</label>
+          <input id="date_of_birth" type="date" name="date_of_birth" required>
+        </div>
+        <div class="field">
+          <label for="social_security_number">Social security number (9 digits)</label>
+          <input id="social_security_number" name="social_security_number" required>
+        </div>
+        <div class="field">
+          <label for="dependency_start">Start of dependency</label>
+          <input id="dependency_start" type="date" name="dependency_start" required>
+        </div>
+        <div class="field">
+          <label for="disability">Disability</label>
+          <input id="disability" name="disability" placeholder="Optional note">
+        </div>
+      </div>
+      <div class="button-row">
+        <button type="submit">Save dependent</button>
+        <a class="button button-secondary" href="{{ url_for('dashboard') }}">Back to dashboard</a>
+      </div>
+    </form>
+  </section>
+</section>
 {% endblock %}
