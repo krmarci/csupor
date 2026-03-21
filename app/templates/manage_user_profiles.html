@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Manage User Profiles · CSUPOR Portal{% endblock %}
+{% block content %}
+<section class="hero">
+  <div class="hero-copy">
+    <span class="eyebrow">Restricted profile access</span>
+    <h1>Edit employee profiles for selected users.</h1>
+    <p>
+      HR and CEO users can open a selected employee record, review profile details, and save updates from one dedicated interface.
+    </p>
+  </div>
+  <aside class="hero-panel">
+    <span class="badge">Who can use this?</span>
+    <ul>
+      <li>Only <strong>hr</strong> and <strong>ceo</strong> accounts can reach this page.</li>
+      <li>Select any registered user to open the full employee profile editor.</li>
+      <li>Use this workflow when profile corrections need administrative review.</li>
+    </ul>
+  </aside>
+</section>
+
+<section class="layout-stack">
+  <section class="table-card">
+    <div class="section-heading">
+      <div>
+        <h2>User profile administration</h2>
+        <p>Choose a user below to edit that employee's profile details.</p>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>User ID</th>
+            <th>Username</th>
+            <th>E-mail</th>
+            <th>Privilege</th>
+            <th>Profile status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for user in users %}
+          <tr>
+            <td>{{ user.id }}</td>
+            <td><strong>{{ user.username }}</strong></td>
+            <td>{{ user.email }}</td>
+            <td><span class="badge">{{ user.privilege.value }}</span></td>
+            <td>
+              {% if user.profile and user.profile.full_name %}
+              <span class="pill">Profile started</span>
+              {% else %}
+              <span class="badge">Needs details</span>
+              {% endif %}
+            </td>
+            <td>
+              <a class="button button-secondary" href="{{ url_for('edit_user_profile', user_id=user.id) }}">Edit profile</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</section>
+{% endblock %}

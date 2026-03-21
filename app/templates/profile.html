@@ -1,8 +1,20 @@
 {% extends "base.html" %}
-{% block title %}Profile · CSUPOR Portal{% endblock %}
+{% block title %}{% if manager_mode %}Edit {{ target_user.username }} · Profile{% else %}Profile · CSUPOR Portal{% endif %}{% endblock %}
 {% block content %}
 <section class="form-page">
   <aside class="form-sidebar">
+    {% if manager_mode %}
+    <span class="eyebrow">Administrative profile editor</span>
+    <h2>Update {{ target_user.username }}'s employee record.</h2>
+    <p>
+      Review and revise the selected employee's core profile details. Changes are saved directly to that user's record.
+    </p>
+    <ul>
+      <li>Confirm official identifiers before saving administrative edits.</li>
+      <li>Use this view to correct missing or outdated employee information.</li>
+      <li>Return to the user list to choose another profile after saving.</li>
+    </ul>
+    {% else %}
     <span class="eyebrow">Employee profile</span>
     <h2>Build a complete employee record.</h2>
     <p>
@@ -13,13 +25,20 @@
       <li>Add both permanent and temporary addresses where applicable.</li>
       <li>Save regularly to keep HR information current.</li>
     </ul>
+    {% endif %}
   </aside>
 
   <section class="form-shell">
     <div class="section-heading">
       <div>
-        <h2>User profile</h2>
-        <p>Complete or revise the fields below to keep your employee information accurate.</p>
+        <h2>{% if manager_mode %}Editing {{ target_user.username }}{% else %}User profile{% endif %}</h2>
+        <p>
+          {% if manager_mode %}
+          Make updates for <strong>{{ target_user.email }}</strong> using the same employee profile form.
+          {% else %}
+          Complete or revise the fields below to keep your employee information accurate.
+          {% endif %}
+        </p>
       </div>
     </div>
 
@@ -100,8 +119,8 @@
         </div>
       </div>
       <div class="button-row">
-        <button type="submit">Save profile</button>
-        <a class="button button-secondary" href="{{ url_for('dashboard') }}">Cancel</a>
+        <button type="submit">{% if manager_mode %}Save user profile{% else %}Save profile{% endif %}</button>
+        <a class="button button-secondary" href="{{ url_for('manage_user_profiles') if manager_mode else url_for('dashboard') }}">Cancel</a>
       </div>
     </form>
   </section>

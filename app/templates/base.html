@@ -698,6 +698,7 @@
           <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">Dashboard</a>
           <a class="nav-link {% if request.endpoint == 'edit_profile' %}active{% endif %}" href="{{ url_for('edit_profile') }}">Edit profile</a>
           {% if current_user.privilege.value in ['hr', 'ceo'] %}
+          <a class="nav-link {% if request.endpoint in ['manage_user_profiles', 'edit_user_profile'] %}active{% endif %}" href="{{ url_for('manage_user_profiles') }}">User profiles</a>
           <a class="nav-link {% if request.endpoint == 'manage_privileges' %}active{% endif %}" href="{{ url_for('manage_privileges') }}">Privileges</a>
           {% endif %}
           <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>

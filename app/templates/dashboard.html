@@ -207,6 +207,21 @@
       {% endif %}
     </section>
 
+    {% if can_manage_user_profiles %}
+    <section class="card span-12">
+      <div class="section-heading">
+        <div>
+          <h2>User profile administration</h2>
+          <p>HR and CEO users can select any employee account and edit that person's profile information.</p>
+        </div>
+        <a class="button button-secondary" href="{{ url_for('manage_user_profiles') }}">Open profile manager</a>
+      </div>
+      <div class="empty-state">
+        Review registered users, choose a record, and update profile details without signing in as that employee.
+      </div>
+    </section>
+    {% endif %}
+
     {% if can_manage_privileges %}
     <section class="card span-12">
       <div class="section-heading">
