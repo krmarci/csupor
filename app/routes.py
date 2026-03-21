@@ -28,6 +28,47 @@ def _validate_digit_field(label: str, value: str | None, length: int) -> str | N
     return None
 
 
+def _save_profile_from_form(profile: UserProfile) -> list[str]:
+    errors = [
+        _validate_digit_field("Social security number", request.form.get("social_security_number"), 9),
+        _validate_digit_field("Tax number", request.form.get("tax_number"), 10),
+        _validate_digit_field("Education number", request.form.get("education_number"), 11),
+    ]
+    errors = [err for err in errors if err]
+    if errors:
+        return errors
+
+    profile.full_name = request.form.get("full_name")
+    profile.name_at_birth = request.form.get("name_at_birth")
+    profile.date_of_birth = parse_iso_date(request.form.get("date_of_birth"))
+    profile.place_of_birth = request.form.get("place_of_birth")
+    gender_value = request.form.get("gender")
+    profile.gender = Gender(gender_value) if gender_value else None
+    profile.mothers_maiden_name = request.form.get("mothers_maiden_name")
+    profile.citizenships = request.form.get("citizenships")
+    profile.social_security_number = request.form.get("social_security_number")
+    profile.tax_number = request.form.get("tax_number")
+    profile.education_number = request.form.get("education_number")
+    profile.teacher_id_card_number = request.form.get("teacher_id_card_number")
+    profile.permanent_residence = request.form.get("permanent_residence")
+    profile.temporary_address = request.form.get("temporary_address")
+    profile.phone_number = request.form.get("phone_number")
+    profile.bank_account_number = request.form.get("bank_account_number")
+    profile.marital_status = request.form.get("marital_status")
+    profile.disability = request.form.get("disability")
+    return []
+
+
+def _render_profile_editor(profile: UserProfile, target_user: User, *, manager_mode: bool = False):
+    return render_template(
+        "profile.html",
+        profile=profile,
+        genders=Gender,
+        manager_mode=manager_mode,
+        target_user=target_user,
+    )
+
+
 def _can_manage_privileges(user: User) -> bool:
     return user.is_authenticated and user.privilege in {UserPrivilege.hr, UserPrivilege.ceo}
 
@@ -110,7 +151,11 @@ def init_routes(app):
     @app.route("/dashboard")
     @login_required
     def dashboard():
-        return render_template("dashboard.html", can_manage_privileges=_can_manage_privileges(current_user))
+        return render_template(
+            "dashboard.html",
+            can_manage_privileges=_can_manage_privileges(current_user),
+            can_manage_user_profiles=_can_manage_privileges(current_user),
+        )
 
     @app.route("/users/privileges", methods=["GET", "POST"])
     @privilege_manager_required
@@ -151,42 +196,47 @@ def init_routes(app):
     def edit_profile():
         profile = current_user.profile or UserProfile(user_id=current_user.id)
         if request.method == "POST":
-            errors = [
-                _validate_digit_field("Social security number", request.form.get("social_security_number"), 9),
-                _validate_digit_field("Tax number", request.form.get("tax_number"), 10),
-                _validate_digit_field("Education number", request.form.get("education_number"), 11),
-            ]
-            errors = [err for err in errors if err]
+            errors = _save_profile_from_form(profile)
             if errors:
                 for err in errors:
                     flash(err, "error")
-                return render_template("profile.html", profile=profile, genders=Gender)
-
-            profile.full_name = request.form.get("full_name")
-            profile.name_at_birth = request.form.get("name_at_birth")
-            profile.date_of_birth = parse_iso_date(request.form.get("date_of_birth"))
-            profile.place_of_birth = request.form.get("place_of_birth")
-            gender_value = request.form.get("gender")
-            profile.gender = Gender(gender_value) if gender_value else None
-            profile.mothers_maiden_name = request.form.get("mothers_maiden_name")
-            profile.citizenships = request.form.get("citizenships")
-            profile.social_security_number = request.form.get("social_security_number")
-            profile.tax_number = request.form.get("tax_number")
-            profile.education_number = request.form.get("education_number")
-            profile.teacher_id_card_number = request.form.get("teacher_id_card_number")
-            profile.permanent_residence = request.form.get("permanent_residence")
-            profile.temporary_address = request.form.get("temporary_address")
-            profile.phone_number = request.form.get("phone_number")
-            profile.bank_account_number = request.form.get("bank_account_number")
-            profile.marital_status = request.form.get("marital_status")
-            profile.disability = request.form.get("disability")
+                return _render_profile_editor(profile, current_user)
 
             db.session.add(profile)
             db.session.commit()
             flash("Profile updated.", "success")
             return redirect(url_for("dashboard"))
 
-        return render_template("profile.html", profile=profile, genders=Gender)
+        return _render_profile_editor(profile, current_user)
+
+    @app.route("/users/profiles")
+    @privilege_manager_required
+    def manage_user_profiles():
+        users = User.query.order_by(User.username.asc()).all()
+        return render_template("manage_user_profiles.html", users=users)
+
+    @app.route("/users/<int:user_id>/profile", methods=["GET", "POST"])
+    @privilege_manager_required
+    def edit_user_profile(user_id: int):
+        target_user = db.session.get(User, user_id)
+        if target_user is None:
+            flash("User not found.", "error")
+            return redirect(url_for("manage_user_profiles"))
+
+        profile = target_user.profile or UserProfile(user_id=target_user.id)
+        if request.method == "POST":
+            errors = _save_profile_from_form(profile)
+            if errors:
+                for err in errors:
+                    flash(err, "error")
+                return _render_profile_editor(profile, target_user, manager_mode=True)
+
+            db.session.add(profile)
+            db.session.commit()
+            flash(f"Updated profile for {target_user.username}.", "success")
+            return redirect(url_for("manage_user_profiles"))
+
+        return _render_profile_editor(profile, target_user, manager_mode=True)
 
     @app.route("/dependents/add", methods=["GET", "POST"])
     @login_required
