@@ -1,9 +1,43 @@
 {% extends "base.html" %}
+{% block title %}Login · CSUPOR Portal{% endblock %}
 {% block content %}
-<h1>Login</h1>
-<form method="post">
-  <label>E-mail or username <input name="login" required></label>
-  <label>Password <input type="password" name="password" required></label>
-  <button type="submit">Login</button>
-</form>
+<section class="auth-shell">
+  <div class="auth-grid">
+    <aside class="auth-panel">
+      <span class="eyebrow">Secure access</span>
+      <h1>Welcome back to CSUPOR.</h1>
+      <p>
+        Sign in to manage employee records with a cleaner, more intuitive portal experience built for daily administrative work.
+      </p>
+      <ul>
+        <li>Access your profile, dependents, and qualification records from one dashboard.</li>
+        <li>Review important status information immediately after login.</li>
+        <li>Keep HR workflows efficient with a calmer and more readable interface.</li>
+      </ul>
+    </aside>
+
+    <section class="auth-form">
+      <div class="section-heading">
+        <div>
+          <h2>Login</h2>
+          <p>Use your e-mail address or username and your password to continue.</p>
+        </div>
+      </div>
+      <form method="post">
+        <div class="field field-full">
+          <label for="login">E-mail or username</label>
+          <input id="login" name="login" required placeholder="name@example.com or username">
+        </div>
+        <div class="field field-full">
+          <label for="password">Password</label>
+          <input id="password" type="password" name="password" required placeholder="Enter your password">
+        </div>
+        <div class="button-row">
+          <button type="submit">Login</button>
+          <a class="button button-secondary" href="{{ url_for('register') }}">Create an account</a>
+        </div>
+      </form>
+    </section>
+  </div>
+</section>
 {% endblock %}
