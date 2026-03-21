@@ -1,6 +1,7 @@
 from datetime import datetime
+from functools import wraps
 
-from flask import flash, redirect, render_template, request, url_for
+from flask import abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required, login_user, logout_user
 
 from . import db
@@ -16,12 +17,30 @@ from .models import (
 )
 
 
+MANAGEABLE_PRIVILEGES = (UserPrivilege.employee, UserPrivilege.hr, UserPrivilege.ceo, UserPrivilege.developer)
+
+
 def _validate_digit_field(label: str, value: str | None, length: int) -> str | None:
     if not value:
         return None
     if not value.isdigit() or len(value) != length:
         return f"{label} must be exactly {length} digits."
     return None
+
+
+def _can_manage_privileges(user: User) -> bool:
+    return user.is_authenticated and user.privilege in {UserPrivilege.hr, UserPrivilege.ceo}
+
+
+def privilege_manager_required(view_func):
+    @wraps(view_func)
+    @login_required
+    def wrapped_view(*args, **kwargs):
+        if not _can_manage_privileges(current_user):
+            abort(403)
+        return view_func(*args, **kwargs)
+
+    return wrapped_view
 
 
 def init_routes(app):
@@ -37,22 +56,16 @@ def init_routes(app):
             email = request.form.get("email", "").strip().lower()
             username = request.form.get("username", "").strip()
             password = request.form.get("password", "")
-            privilege_raw = request.form.get("privilege", UserPrivilege.employee.value)
 
             if not email or not username or not password:
                 flash("Email, username and password are required.", "error")
-                return render_template("register.html", privileges=UserPrivilege)
+                return render_template("register.html")
 
             if User.query.filter((User.email == email) | (User.username == username)).first():
                 flash("Email or username already exists.", "error")
-                return render_template("register.html", privileges=UserPrivilege)
+                return render_template("register.html")
 
-            try:
-                privilege = UserPrivilege(privilege_raw)
-            except ValueError:
-                privilege = UserPrivilege.employee
-
-            user = User(email=email, username=username, privilege=privilege)
+            user = User(email=email, username=username, privilege=UserPrivilege.employee)
             user.set_password(password)
             db.session.add(user)
             db.session.flush()
@@ -62,10 +75,10 @@ def init_routes(app):
             db.session.commit()
 
             login_user(user)
-            flash("Registration successful. Please fill your profile.", "success")
+            flash("Registration successful. Your privilege is set to employee until HR or the CEO updates it.", "success")
             return redirect(url_for("edit_profile"))
 
-        return render_template("register.html", privileges=UserPrivilege)
+        return render_template("register.html")
 
     @app.route("/login", methods=["GET", "POST"])
     def login():
@@ -97,7 +110,41 @@ def init_routes(app):
     @app.route("/dashboard")
     @login_required
     def dashboard():
-        return render_template("dashboard.html")
+        return render_template("dashboard.html", can_manage_privileges=_can_manage_privileges(current_user))
+
+    @app.route("/users/privileges", methods=["GET", "POST"])
+    @privilege_manager_required
+    def manage_privileges():
+        if request.method == "POST":
+            user_id = request.form.get("user_id", type=int)
+            privilege_raw = request.form.get("privilege", UserPrivilege.employee.value)
+            user = db.session.get(User, user_id)
+
+            if user is None:
+                flash("User not found.", "error")
+                return redirect(url_for("manage_privileges"))
+
+            try:
+                privilege = UserPrivilege(privilege_raw)
+            except ValueError:
+                flash("Invalid privilege selected.", "error")
+                return redirect(url_for("manage_privileges"))
+
+            if privilege not in MANAGEABLE_PRIVILEGES:
+                flash("That privilege cannot be assigned here.", "error")
+                return redirect(url_for("manage_privileges"))
+
+            user.privilege = privilege
+            db.session.commit()
+            flash(f"Updated {user.username} to {privilege.value} privilege.", "success")
+            return redirect(url_for("manage_privileges"))
+
+        users = User.query.order_by(User.id.asc()).all()
+        return render_template(
+            "manage_privileges.html",
+            users=users,
+            privileges=MANAGEABLE_PRIVILEGES,
+        )
 
     @app.route("/profile", methods=["GET", "POST"])
     @login_required

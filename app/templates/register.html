@@ -1,17 +1,11 @@
 {% extends "base.html" %}
 {% block content %}
 <h1>Registration</h1>
+<p>New accounts are registered with the default <strong>employee</strong> privilege. HR or the CEO can assign a different privilege later.</p>
 <form method="post">
   <label>E-mail <input type="email" name="email" required></label>
   <label>Username <input name="username" required></label>
   <label>Password <input type="password" name="password" required></label>
-  <label>Privilege
-    <select name="privilege">
-      {% for p in privileges %}
-      <option value="{{ p.value }}">{{ p.value }}</option>
-      {% endfor %}
-    </select>
-  </label>
   <button type="submit">Register</button>
 </form>
 {% endblock %}
