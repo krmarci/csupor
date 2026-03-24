@@ -35,7 +35,7 @@
       <div class="stat-icon">👤</div>
       <div class="stat-copy">
         <span>Profile status</span>
-        <strong>{{ 'Complete' if current_user.profile and current_user.profile.full_name else 'Needs review' }}</strong>
+        <strong>{{ profile_status_label }}</strong>
       </div>
     </article>
     <article class="stat-card">
