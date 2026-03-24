@@ -3,15 +3,23 @@
 {% block content %}
 <section class="dashboard-grid">
   <section class="form-shell span-5">
-    <div class="section-heading"><h2>Add legal entity</h2></div>
+    <div class="section-heading"><h2>{{ "Edit legal entity" if editing_entity else "Add legal entity" }}</h2></div>
     <form method="post" class="grid-form">
+      {% if editing_entity %}
+      <input type="hidden" name="entity_id" value="{{ editing_entity.id }}">
+      {% endif %}
       <label for="name">Name *</label>
-      <input id="name" name="name" required>
+      <input id="name" name="name" value="{{ editing_entity.name if editing_entity else '' }}" required>
       <label for="address">Address *</label>
-      <input id="address" name="address" required>
+      <input id="address" name="address" value="{{ editing_entity.address if editing_entity else '' }}" required>
       <label for="om_id">OM id (6 digits) *</label>
-      <input id="om_id" name="om_id" pattern="\d{6}" required>
-      <button type="submit">Save legal entity</button>
+      <input id="om_id" name="om_id" pattern="\d{6}" value="{{ editing_entity.om_id if editing_entity else '' }}" required>
+      <div class="button-row">
+        <button type="submit">{{ "Update legal entity" if editing_entity else "Save legal entity" }}</button>
+        {% if editing_entity %}
+        <a class="button button-secondary" href="{{ url_for('manage_legal_entities') }}">Cancel edit</a>
+        {% endif %}
+      </div>
     </form>
   </section>
 
@@ -27,13 +35,7 @@
             <td>{{ entity.address }}</td>
             <td>{{ entity.om_id }}</td>
             <td>
-              <form method="post" class="inline-form">
-                <input type="hidden" name="entity_id" value="{{ entity.id }}">
-                <input name="name" value="{{ entity.name }}" required>
-                <input name="address" value="{{ entity.address }}" required>
-                <input name="om_id" value="{{ entity.om_id }}" pattern="\d{6}" required>
-                <button type="submit">Update</button>
-              </form>
+              <a class="button button-secondary" href="{{ url_for('manage_legal_entities', edit=entity.id) }}">Edit</a>
             </td>
           </tr>
           {% endfor %}

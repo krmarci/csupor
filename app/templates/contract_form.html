@@ -80,7 +80,13 @@
       <select id="place_of_work_id" name="place_of_work_id" required>
         <option value="">Select place of work</option>
         {% for place in places_of_work %}
-        <option value="{{ place.id }}" {% if contract.place_of_work_id == place.id %}selected{% endif %}>{{ place_label_fn(place) }}</option>
+        <option
+          value="{{ place.id }}"
+          data-entity-id="{{ place.legal_entity_id }}"
+          {% if contract.place_of_work_id == place.id %}selected{% endif %}
+        >
+          {{ place_label_fn(place) }}
+        </option>
         {% endfor %}
       </select>
     </div>
@@ -91,4 +97,72 @@
     </div>
   </form>
 </section>
+<script>
+  (() => {
+    const employerSelect = document.getElementById("legal_entity_id");
+    const workplaceSelect = document.getElementById("place_of_work_id");
+    if (!employerSelect || !workplaceSelect) {
+      return;
+    }
+
+    const workplaceOptions = Array.from(workplaceSelect.options).filter((option) => option.value);
+    const employerOptions = Array.from(employerSelect.options).filter((option) => option.value);
+
+    const syncFromEmployer = () => {
+      const selectedEmployerId = employerSelect.value;
+      workplaceOptions.forEach((option) => {
+        const matchesEmployer = !selectedEmployerId || option.dataset.entityId === selectedEmployerId;
+        option.hidden = !matchesEmployer;
+        option.disabled = !matchesEmployer;
+      });
+
+      if (workplaceSelect.value) {
+        const selectedWorkplace = workplaceSelect.options[workplaceSelect.selectedIndex];
+        if (!selectedWorkplace || selectedWorkplace.disabled) {
+          workplaceSelect.value = "";
+        }
+      }
+    };
+
+    const syncFromWorkplace = () => {
+      const selectedWorkplace = workplaceSelect.options[workplaceSelect.selectedIndex];
+      const selectedEmployerFromWorkplace =
+        selectedWorkplace && selectedWorkplace.value ? selectedWorkplace.dataset.entityId : "";
+
+      employerOptions.forEach((option) => {
+        const matchesWorkplace = !selectedEmployerFromWorkplace || option.value === selectedEmployerFromWorkplace;
+        option.hidden = !matchesWorkplace;
+        option.disabled = !matchesWorkplace;
+      });
+
+      if (
+        selectedEmployerFromWorkplace &&
+        employerSelect.value &&
+        employerSelect.value !== selectedEmployerFromWorkplace
+      ) {
+        employerSelect.value = selectedEmployerFromWorkplace;
+      }
+
+      if (!selectedEmployerFromWorkplace) {
+        employerOptions.forEach((option) => {
+          option.hidden = false;
+          option.disabled = false;
+        });
+      }
+    };
+
+    employerSelect.addEventListener("change", () => {
+      syncFromEmployer();
+      syncFromWorkplace();
+    });
+
+    workplaceSelect.addEventListener("change", () => {
+      syncFromWorkplace();
+      syncFromEmployer();
+    });
+
+    syncFromEmployer();
+    syncFromWorkplace();
+  })();
+</script>
 {% endblock %}
