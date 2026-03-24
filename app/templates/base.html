@@ -124,6 +124,37 @@
         gap: 10px;
       }
 
+      .nav-group {
+        position: relative;
+      }
+
+      .nav-group > summary {
+        list-style: none;
+      }
+
+      .nav-group > summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .nav-group-menu {
+        position: absolute;
+        right: 0;
+        top: calc(100% + 8px);
+        min-width: 220px;
+        padding: 10px;
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        background: rgba(15, 23, 42, 0.96);
+        box-shadow: 0 22px 34px rgba(15, 23, 42, 0.35);
+        display: grid;
+        gap: 8px;
+        z-index: 10;
+      }
+
+      .nav-group:not([open]) .nav-group-menu {
+        display: none;
+      }
+
       .nav-link {
         padding: 10px 16px;
         border-radius: 999px;
@@ -698,11 +729,20 @@
           <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">Dashboard</a>
           <a class="nav-link {% if request.endpoint == 'edit_profile' %}active{% endif %}" href="{{ url_for('edit_profile') }}">Edit profile</a>
           {% if current_user.privilege.value in ['hr', 'ceo'] %}
-          <a class="nav-link {% if request.endpoint in ['manage_user_profiles', 'edit_user_profile'] %}active{% endif %}" href="{{ url_for('manage_user_profiles') }}">User profiles</a>
-          <a class="nav-link {% if request.endpoint == 'manage_privileges' %}active{% endif %}" href="{{ url_for('manage_privileges') }}">Privileges</a>
-          <a class="nav-link {% if request.endpoint in ['manage_contracts', 'create_contract', 'edit_contract'] %}active{% endif %}" href="{{ url_for('manage_contracts') }}">Contracts</a>
-          <a class="nav-link {% if request.endpoint == 'manage_legal_entities' %}active{% endif %}" href="{{ url_for('manage_legal_entities') }}">Legal entities</a>
-          <a class="nav-link {% if request.endpoint == 'manage_places_of_work' %}active{% endif %}" href="{{ url_for('manage_places_of_work') }}">Workplaces</a>
+          <details class="nav-group">
+            <summary
+              class="nav-link {% if request.endpoint in ['manage_user_profiles', 'edit_user_profile', 'manage_privileges', 'manage_contracts', 'create_contract', 'edit_contract', 'manage_legal_entities', 'manage_places_of_work'] %}active{% endif %}"
+            >
+              Management
+            </summary>
+            <div class="nav-group-menu">
+              <a class="nav-link {% if request.endpoint in ['manage_user_profiles', 'edit_user_profile'] %}active{% endif %}" href="{{ url_for('manage_user_profiles') }}">User profiles</a>
+              <a class="nav-link {% if request.endpoint == 'manage_privileges' %}active{% endif %}" href="{{ url_for('manage_privileges') }}">Privileges</a>
+              <a class="nav-link {% if request.endpoint in ['manage_contracts', 'create_contract', 'edit_contract'] %}active{% endif %}" href="{{ url_for('manage_contracts') }}">Contracts</a>
+              <a class="nav-link {% if request.endpoint == 'manage_legal_entities' %}active{% endif %}" href="{{ url_for('manage_legal_entities') }}">Legal entities</a>
+              <a class="nav-link {% if request.endpoint == 'manage_places_of_work' %}active{% endif %}" href="{{ url_for('manage_places_of_work') }}">Workplaces</a>
+            </div>
+          </details>
           {% endif %}
           <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
           {% else %}

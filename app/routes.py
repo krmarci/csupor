@@ -425,6 +425,7 @@ def init_routes(app):
     @app.route("/legal-entities", methods=["GET", "POST"])
     @privilege_manager_required
     def manage_legal_entities():
+        editing_entity_id = request.args.get("edit", type=int)
         if request.method == "POST":
             entity_id = request.form.get("entity_id", type=int)
             name = _normalize_optional_text(request.form.get("name"))
@@ -450,15 +451,22 @@ def init_routes(app):
             entity.om_id = om_id
             db.session.add(entity)
             db.session.commit()
-            flash("Legal entity saved.", "success")
+            flash("Legal entity updated." if entity_id else "Legal entity saved.", "success")
             return redirect(url_for("manage_legal_entities"))
 
         entities = LegalEntity.query.order_by(LegalEntity.name.asc()).all()
-        return render_template("manage_legal_entities.html", entities=entities)
+        editing_entity = None
+        if editing_entity_id:
+            editing_entity = db.session.get(LegalEntity, editing_entity_id)
+            if editing_entity is None:
+                flash("Legal entity not found.", "error")
+                return redirect(url_for("manage_legal_entities"))
+        return render_template("manage_legal_entities.html", entities=entities, editing_entity=editing_entity)
 
     @app.route("/places-of-work", methods=["GET", "POST"])
     @privilege_manager_required
     def manage_places_of_work():
+        editing_place_id = request.args.get("edit", type=int)
         if request.method == "POST":
             place_id = request.form.get("place_id", type=int)
             legal_entity_id = request.form.get("legal_entity_id", type=int)
@@ -481,12 +489,23 @@ def init_routes(app):
             place.address = address
             db.session.add(place)
             db.session.commit()
-            flash("Place of work saved.", "success")
+            flash("Place of work updated." if place_id else "Place of work saved.", "success")
             return redirect(url_for("manage_places_of_work"))
 
         entities = LegalEntity.query.order_by(LegalEntity.name.asc()).all()
         places = PlaceOfWork.query.join(LegalEntity).order_by(LegalEntity.name.asc(), PlaceOfWork.address.asc()).all()
-        return render_template("manage_places_of_work.html", entities=entities, places=places)
+        editing_place = None
+        if editing_place_id:
+            editing_place = db.session.get(PlaceOfWork, editing_place_id)
+            if editing_place is None:
+                flash("Place of work not found.", "error")
+                return redirect(url_for("manage_places_of_work"))
+        return render_template(
+            "manage_places_of_work.html",
+            entities=entities,
+            places=places,
+            editing_place=editing_place,
+        )
 
     @app.route("/contracts")
     @privilege_manager_required
