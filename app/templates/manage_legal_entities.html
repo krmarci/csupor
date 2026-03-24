@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Legal entities · CSUPOR Portal{% endblock %}
+{% block content %}
+<section class="dashboard-grid">
+  <section class="form-shell span-5">
+    <div class="section-heading"><h2>Add legal entity</h2></div>
+    <form method="post" class="grid-form">
+      <label for="name">Name *</label>
+      <input id="name" name="name" required>
+      <label for="address">Address *</label>
+      <input id="address" name="address" required>
+      <label for="om_id">OM id (6 digits) *</label>
+      <input id="om_id" name="om_id" pattern="\d{6}" required>
+      <button type="submit">Save legal entity</button>
+    </form>
+  </section>
+
+  <section class="table-card span-7">
+    <div class="section-heading"><h2>Existing legal entities</h2></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Name</th><th>Address</th><th>OM id</th><th>Edit</th></tr></thead>
+        <tbody>
+          {% for entity in entities %}
+          <tr>
+            <td>{{ entity.name }}</td>
+            <td>{{ entity.address }}</td>
+            <td>{{ entity.om_id }}</td>
+            <td>
+              <form method="post" class="inline-form">
+                <input type="hidden" name="entity_id" value="{{ entity.id }}">
+                <input name="name" value="{{ entity.name }}" required>
+                <input name="address" value="{{ entity.address }}" required>
+                <input name="om_id" value="{{ entity.om_id }}" pattern="\d{6}" required>
+                <button type="submit">Update</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</section>
+{% endblock %}

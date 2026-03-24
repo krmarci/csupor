@@ -700,6 +700,9 @@
           {% if current_user.privilege.value in ['hr', 'ceo'] %}
           <a class="nav-link {% if request.endpoint in ['manage_user_profiles', 'edit_user_profile'] %}active{% endif %}" href="{{ url_for('manage_user_profiles') }}">User profiles</a>
           <a class="nav-link {% if request.endpoint == 'manage_privileges' %}active{% endif %}" href="{{ url_for('manage_privileges') }}">Privileges</a>
+          <a class="nav-link {% if request.endpoint in ['manage_contracts', 'create_contract', 'edit_contract'] %}active{% endif %}" href="{{ url_for('manage_contracts') }}">Contracts</a>
+          <a class="nav-link {% if request.endpoint == 'manage_legal_entities' %}active{% endif %}" href="{{ url_for('manage_legal_entities') }}">Legal entities</a>
+          <a class="nav-link {% if request.endpoint == 'manage_places_of_work' %}active{% endif %}" href="{{ url_for('manage_places_of_work') }}">Workplaces</a>
           {% endif %}
           <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
           {% else %}
