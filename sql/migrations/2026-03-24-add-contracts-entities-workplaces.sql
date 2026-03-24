@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS places_of_work (
 
 CREATE TABLE IF NOT EXISTS contracts (
   id INT NOT NULL AUTO_INCREMENT,
-  user_id INT NOT NULL,
+  user_id INT UNSIGNED NOT NULL,
   contract_type ENUM('pedagogue', 'assistant in educational and training work', 'employee according to the Labour Code') NOT NULL,
   start_date DATE NOT NULL,
   end_date DATE NULL,
