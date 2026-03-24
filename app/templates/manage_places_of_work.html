@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Places of work · CSUPOR Portal{% endblock %}
+{% block content %}
+<section class="dashboard-grid">
+  <section class="form-shell span-5">
+    <div class="section-heading"><h2>Add place of work</h2></div>
+    <form method="post" class="grid-form">
+      <label for="legal_entity_id">Legal entity *</label>
+      <select id="legal_entity_id" name="legal_entity_id" required>
+        <option value="">Select legal entity</option>
+        {% for entity in entities %}
+        <option value="{{ entity.id }}">{{ entity.name }}</option>
+        {% endfor %}
+      </select>
+      <label for="address">Address *</label>
+      <input id="address" name="address" required>
+      <button type="submit">Save place of work</button>
+    </form>
+  </section>
+
+  <section class="table-card span-7">
+    <div class="section-heading"><h2>Existing places of work</h2></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Legal entity</th><th>Address</th><th>Display format</th><th>Edit</th></tr></thead>
+        <tbody>
+          {% for place in places %}
+          <tr>
+            <td>{{ place.legal_entity.name }}</td>
+            <td>{{ place.address }}</td>
+            <td>{{ place.legal_entity.name }} - {{ place.address }}</td>
+            <td>
+              <form method="post" class="inline-form">
+                <input type="hidden" name="place_id" value="{{ place.id }}">
+                <select name="legal_entity_id" required>
+                  {% for entity in entities %}
+                  <option value="{{ entity.id }}" {% if place.legal_entity_id == entity.id %}selected{% endif %}>{{ entity.name }}</option>
+                  {% endfor %}
+                </select>
+                <input name="address" value="{{ place.address }}" required>
+                <button type="submit">Update</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</section>
+{% endblock %}

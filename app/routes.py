@@ -6,10 +6,15 @@ from flask_login import current_user, login_required, login_user, logout_user
 
 from . import db
 from .models import (
+    Contract,
+    ContractType,
     Dependent,
     EducationalQualification,
     Gender,
+    LegalEntity,
+    PlaceOfWork,
     ProfessionalExam,
+    TeacherClassification,
     User,
     UserPrivilege,
     UserProfile,
@@ -113,6 +118,76 @@ def _render_profile_editor(profile: UserProfile, target_user: User, *, manager_m
         target_user=target_user,
     )
 
+
+
+
+def _validate_om_id(value: str | None) -> str | None:
+    normalized = _normalize_optional_text(value)
+    if not normalized or not normalized.isdigit() or len(normalized) != 6:
+        return "OM id must be exactly 6 digits."
+    return None
+
+
+def _contract_place_label(place: PlaceOfWork) -> str:
+    return f"{place.legal_entity.name} - {place.address}"
+
+
+def _save_contract_from_form(contract: Contract) -> list[str]:
+    contract_type_raw = _normalize_optional_text(request.form.get("contract_type"))
+    teacher_classification_raw = _normalize_optional_text(request.form.get("teacher_classification"))
+    legal_entity_id = request.form.get("legal_entity_id", type=int)
+    place_of_work_id = request.form.get("place_of_work_id", type=int)
+
+    if not contract_type_raw:
+        return ["Contract type is required."]
+
+    try:
+        contract.contract_type = ContractType(contract_type_raw)
+    except ValueError:
+        return ["Invalid contract type selected."]
+
+    if not legal_entity_id:
+        return ["Employer is required."]
+    if not place_of_work_id:
+        return ["Place of work is required."]
+
+    contract.legal_entity_id = legal_entity_id
+    contract.place_of_work_id = place_of_work_id
+
+    contract.start_date = parse_iso_date(request.form.get("start_date"))
+    contract.end_date = parse_iso_date(request.form.get("end_date"))
+    contract.certificate_of_good_conduct_number = _normalize_optional_text(
+        request.form.get("certificate_of_good_conduct_number")
+    )
+    contract.certificate_of_good_conduct_date = parse_iso_date(request.form.get("certificate_of_good_conduct_date"))
+    contract.job_title = _normalize_optional_text(request.form.get("job_title"))
+    contract.working_hours_per_week = request.form.get("working_hours_per_week", type=int)
+    contract.teacher_classification = (
+        TeacherClassification(teacher_classification_raw) if teacher_classification_raw else None
+    )
+    contract.classification_start_date = parse_iso_date(request.form.get("classification_start_date"))
+
+    errors = []
+    if contract.start_date is None:
+        errors.append("Start date is required.")
+    if not contract.job_title:
+        errors.append("Job title is required.")
+    if contract.working_hours_per_week is None:
+        errors.append("Working hours per week is required.")
+    elif contract.working_hours_per_week < 1:
+        errors.append("Working hours per week must be greater than 0.")
+
+    if contract.end_date and contract.start_date and contract.end_date < contract.start_date:
+        errors.append("End date cannot be earlier than the start date.")
+
+    if contract.place_of_work_id and contract.legal_entity_id:
+        place = db.session.get(PlaceOfWork, contract.place_of_work_id)
+        if place is None:
+            errors.append("Selected place of work does not exist.")
+        elif place.legal_entity_id != contract.legal_entity_id:
+            errors.append("Selected place of work does not belong to the selected employer.")
+
+    return errors
 
 def _can_manage_privileges(user: User) -> bool:
     return user.is_authenticated and user.privilege in {UserPrivilege.hr, UserPrivilege.ceo}
@@ -344,6 +419,147 @@ def init_routes(app):
             return redirect(url_for("dashboard"))
 
         return render_template("qualification_form.html")
+
+
+
+    @app.route("/legal-entities", methods=["GET", "POST"])
+    @privilege_manager_required
+    def manage_legal_entities():
+        if request.method == "POST":
+            entity_id = request.form.get("entity_id", type=int)
+            name = _normalize_optional_text(request.form.get("name"))
+            address = _normalize_optional_text(request.form.get("address"))
+            om_id = _normalize_optional_text(request.form.get("om_id"))
+
+            if not name or not address:
+                flash("Name and address are required.", "error")
+                return redirect(url_for("manage_legal_entities"))
+
+            om_error = _validate_om_id(om_id)
+            if om_error:
+                flash(om_error, "error")
+                return redirect(url_for("manage_legal_entities"))
+
+            entity = db.session.get(LegalEntity, entity_id) if entity_id else LegalEntity()
+            if entity is None:
+                flash("Legal entity not found.", "error")
+                return redirect(url_for("manage_legal_entities"))
+
+            entity.name = name
+            entity.address = address
+            entity.om_id = om_id
+            db.session.add(entity)
+            db.session.commit()
+            flash("Legal entity saved.", "success")
+            return redirect(url_for("manage_legal_entities"))
+
+        entities = LegalEntity.query.order_by(LegalEntity.name.asc()).all()
+        return render_template("manage_legal_entities.html", entities=entities)
+
+    @app.route("/places-of-work", methods=["GET", "POST"])
+    @privilege_manager_required
+    def manage_places_of_work():
+        if request.method == "POST":
+            place_id = request.form.get("place_id", type=int)
+            legal_entity_id = request.form.get("legal_entity_id", type=int)
+            address = _normalize_optional_text(request.form.get("address"))
+
+            if not legal_entity_id or not address:
+                flash("Employer and address are required.", "error")
+                return redirect(url_for("manage_places_of_work"))
+
+            if db.session.get(LegalEntity, legal_entity_id) is None:
+                flash("Selected employer does not exist.", "error")
+                return redirect(url_for("manage_places_of_work"))
+
+            place = db.session.get(PlaceOfWork, place_id) if place_id else PlaceOfWork()
+            if place is None:
+                flash("Place of work not found.", "error")
+                return redirect(url_for("manage_places_of_work"))
+
+            place.legal_entity_id = legal_entity_id
+            place.address = address
+            db.session.add(place)
+            db.session.commit()
+            flash("Place of work saved.", "success")
+            return redirect(url_for("manage_places_of_work"))
+
+        entities = LegalEntity.query.order_by(LegalEntity.name.asc()).all()
+        places = PlaceOfWork.query.join(LegalEntity).order_by(LegalEntity.name.asc(), PlaceOfWork.address.asc()).all()
+        return render_template("manage_places_of_work.html", entities=entities, places=places)
+
+    @app.route("/contracts")
+    @privilege_manager_required
+    def manage_contracts():
+        users = User.query.order_by(User.username.asc()).all()
+        return render_template("manage_contracts.html", users=users)
+
+    @app.route("/users/<int:user_id>/contracts/new", methods=["GET", "POST"])
+    @privilege_manager_required
+    def create_contract(user_id: int):
+        target_user = db.session.get(User, user_id)
+        if target_user is None:
+            flash("User not found.", "error")
+            return redirect(url_for("manage_contracts"))
+
+        contract = Contract(user_id=target_user.id)
+        if request.method == "POST":
+            errors = _save_contract_from_form(contract)
+            if errors:
+                for err in errors:
+                    flash(err, "error")
+            else:
+                db.session.add(contract)
+                db.session.commit()
+                flash(f"Contract created for {target_user.username}.", "success")
+                return redirect(url_for("manage_contracts"))
+
+        entities = LegalEntity.query.order_by(LegalEntity.name.asc()).all()
+        places = PlaceOfWork.query.join(LegalEntity).order_by(LegalEntity.name.asc(), PlaceOfWork.address.asc()).all()
+        return render_template(
+            "contract_form.html",
+            target_user=target_user,
+            contract=contract,
+            contract_types=ContractType,
+            teacher_classifications=TeacherClassification,
+            legal_entities=entities,
+            places_of_work=places,
+            place_label_fn=_contract_place_label,
+            mode="create",
+        )
+
+    @app.route("/contracts/<int:contract_id>/edit", methods=["GET", "POST"])
+    @privilege_manager_required
+    def edit_contract(contract_id: int):
+        contract = db.session.get(Contract, contract_id)
+        if contract is None:
+            flash("Contract not found.", "error")
+            return redirect(url_for("manage_contracts"))
+
+        if request.method == "POST":
+            errors = _save_contract_from_form(contract)
+            if errors:
+                for err in errors:
+                    flash(err, "error")
+            else:
+                db.session.add(contract)
+                db.session.commit()
+                flash(f"Contract updated for {contract.user.username}.", "success")
+                return redirect(url_for("manage_contracts"))
+
+        entities = LegalEntity.query.order_by(LegalEntity.name.asc()).all()
+        places = PlaceOfWork.query.join(LegalEntity).order_by(LegalEntity.name.asc(), PlaceOfWork.address.asc()).all()
+        return render_template(
+            "contract_form.html",
+            target_user=contract.user,
+            contract=contract,
+            contract_types=ContractType,
+            teacher_classifications=TeacherClassification,
+            legal_entities=entities,
+            places_of_work=places,
+            place_label_fn=_contract_place_label,
+            mode="edit",
+        )
 
     @app.route("/professional-exam", methods=["GET", "POST"])
     @login_required

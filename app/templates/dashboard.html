@@ -223,6 +223,29 @@
     {% endif %}
 
     {% if can_manage_privileges %}
+
+    <section class="card span-12">
+      <div class="section-heading">
+        <div>
+          <h2>Contract management</h2>
+          <p>Create and edit user contracts with teacher classification and workplace assignment.</p>
+        </div>
+        <a class="button button-secondary" href="{{ url_for('manage_contracts') }}">Open contract manager</a>
+      </div>
+    </section>
+
+    <section class="card span-12">
+      <div class="section-heading">
+        <div>
+          <h2>Legal entities and workplaces</h2>
+          <p>Maintain employers and places of work used in contracts.</p>
+        </div>
+        <div class="button-row">
+          <a class="button button-secondary" href="{{ url_for('manage_legal_entities') }}">Manage legal entities</a>
+          <a class="button button-secondary" href="{{ url_for('manage_places_of_work') }}">Manage workplaces</a>
+        </div>
+      </div>
+    </section>
     <section class="card span-12">
       <div class="section-heading">
         <div>
