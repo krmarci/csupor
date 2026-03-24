@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS legal_entities (
-  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  id INT NOT NULL AUTO_INCREMENT,
   name VARCHAR(120) NOT NULL,
   address VARCHAR(255) NOT NULL,
   om_id CHAR(6) NOT NULL,
@@ -11,8 +11,8 @@ CREATE TABLE IF NOT EXISTS legal_entities (
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS places_of_work (
-  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  legal_entity_id INT UNSIGNED NOT NULL,
+  id INT NOT NULL AUTO_INCREMENT,
+  legal_entity_id INT NOT NULL,
   address VARCHAR(255) NOT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -25,8 +25,8 @@ CREATE TABLE IF NOT EXISTS places_of_work (
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS contracts (
-  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  user_id INT UNSIGNED NOT NULL,
+  id INT NOT NULL AUTO_INCREMENT,
+  user_id INT NOT NULL,
   contract_type ENUM('pedagogue', 'assistant in educational and training work', 'employee according to the Labour Code') NOT NULL,
   start_date DATE NOT NULL,
   end_date DATE NULL,
@@ -36,8 +36,8 @@ CREATE TABLE IF NOT EXISTS contracts (
   working_hours_per_week INT NOT NULL,
   teacher_classification ENUM('Trainee', 'Teacher I', 'Teacher II', 'Master Teacher', 'Research Teacher') NULL,
   classification_start_date DATE NULL,
-  legal_entity_id INT UNSIGNED NOT NULL,
-  place_of_work_id INT UNSIGNED NOT NULL,
+  legal_entity_id INT NOT NULL,
+  place_of_work_id INT NOT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
