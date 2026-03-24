@@ -19,6 +19,39 @@ from .models import (
 
 MANAGEABLE_PRIVILEGES = (UserPrivilege.employee, UserPrivilege.hr, UserPrivilege.ceo, UserPrivilege.developer)
 
+PROFILE_COMPLETION_FIELDS = (
+    "full_name",
+    "name_at_birth",
+    "date_of_birth",
+    "place_of_birth",
+    "gender",
+    "mothers_maiden_name",
+    "citizenships",
+    "social_security_number",
+    "tax_number",
+    "education_number",
+    "teacher_id_card_number",
+    "permanent_residence",
+    "phone_number",
+    "bank_account_number",
+    "marital_status",
+)
+
+
+def _profile_completion_percentage(profile: UserProfile | None) -> int:
+    if profile is None:
+        return 0
+
+    completed = sum(1 for field in PROFILE_COMPLETION_FIELDS if getattr(profile, field))
+    return round((completed / len(PROFILE_COMPLETION_FIELDS)) * 100)
+
+
+def _profile_status_label(profile: UserProfile | None) -> str:
+    completion_percentage = _profile_completion_percentage(profile)
+    if completion_percentage == 100:
+        return "Complete"
+    return f"{completion_percentage}% complete"
+
 
 def _normalize_optional_text(value: str | None) -> str | None:
     if value is None:
@@ -167,6 +200,7 @@ def init_routes(app):
             "dashboard.html",
             can_manage_privileges=_can_manage_privileges(current_user),
             can_manage_user_profiles=_can_manage_privileges(current_user),
+            profile_status_label=_profile_status_label(current_user.profile),
         )
 
     @app.route("/users/privileges", methods=["GET", "POST"])
