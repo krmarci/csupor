@@ -20,42 +20,54 @@ from .models import (
 MANAGEABLE_PRIVILEGES = (UserPrivilege.employee, UserPrivilege.hr, UserPrivilege.ceo, UserPrivilege.developer)
 
 
-def _validate_digit_field(label: str, value: str | None, length: int) -> str | None:
-    if not value:
+def _normalize_optional_text(value: str | None) -> str | None:
+    if value is None:
         return None
-    if not value.isdigit() or len(value) != length:
+    normalized = value.strip()
+    return normalized or None
+
+
+def _validate_digit_field(label: str, value: str | None, length: int) -> str | None:
+    normalized = _normalize_optional_text(value)
+    if not normalized:
+        return None
+    if not normalized.isdigit() or len(normalized) != length:
         return f"{label} must be exactly {length} digits."
     return None
 
 
 def _save_profile_from_form(profile: UserProfile) -> list[str]:
+    social_security_number = _normalize_optional_text(request.form.get("social_security_number"))
+    tax_number = _normalize_optional_text(request.form.get("tax_number"))
+    education_number = _normalize_optional_text(request.form.get("education_number"))
+
     errors = [
-        _validate_digit_field("Social security number", request.form.get("social_security_number"), 9),
-        _validate_digit_field("Tax number", request.form.get("tax_number"), 10),
-        _validate_digit_field("Education number", request.form.get("education_number"), 11),
+        _validate_digit_field("Social security number", social_security_number, 9),
+        _validate_digit_field("Tax number", tax_number, 10),
+        _validate_digit_field("Education number", education_number, 11),
     ]
     errors = [err for err in errors if err]
     if errors:
         return errors
 
-    profile.full_name = request.form.get("full_name")
-    profile.name_at_birth = request.form.get("name_at_birth")
+    profile.full_name = _normalize_optional_text(request.form.get("full_name"))
+    profile.name_at_birth = _normalize_optional_text(request.form.get("name_at_birth"))
     profile.date_of_birth = parse_iso_date(request.form.get("date_of_birth"))
-    profile.place_of_birth = request.form.get("place_of_birth")
-    gender_value = request.form.get("gender")
+    profile.place_of_birth = _normalize_optional_text(request.form.get("place_of_birth"))
+    gender_value = _normalize_optional_text(request.form.get("gender"))
     profile.gender = Gender(gender_value) if gender_value else None
-    profile.mothers_maiden_name = request.form.get("mothers_maiden_name")
-    profile.citizenships = request.form.get("citizenships")
-    profile.social_security_number = request.form.get("social_security_number")
-    profile.tax_number = request.form.get("tax_number")
-    profile.education_number = request.form.get("education_number")
-    profile.teacher_id_card_number = request.form.get("teacher_id_card_number")
-    profile.permanent_residence = request.form.get("permanent_residence")
-    profile.temporary_address = request.form.get("temporary_address")
-    profile.phone_number = request.form.get("phone_number")
-    profile.bank_account_number = request.form.get("bank_account_number")
-    profile.marital_status = request.form.get("marital_status")
-    profile.disability = request.form.get("disability")
+    profile.mothers_maiden_name = _normalize_optional_text(request.form.get("mothers_maiden_name"))
+    profile.citizenships = _normalize_optional_text(request.form.get("citizenships"))
+    profile.social_security_number = social_security_number
+    profile.tax_number = tax_number
+    profile.education_number = education_number
+    profile.teacher_id_card_number = _normalize_optional_text(request.form.get("teacher_id_card_number"))
+    profile.permanent_residence = _normalize_optional_text(request.form.get("permanent_residence"))
+    profile.temporary_address = _normalize_optional_text(request.form.get("temporary_address"))
+    profile.phone_number = _normalize_optional_text(request.form.get("phone_number"))
+    profile.bank_account_number = _normalize_optional_text(request.form.get("bank_account_number"))
+    profile.marital_status = _normalize_optional_text(request.form.get("marital_status"))
+    profile.disability = _normalize_optional_text(request.form.get("disability"))
     return []
 
 
