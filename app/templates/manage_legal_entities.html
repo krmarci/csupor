@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Legal entities · CSUPOR Portal{% endblock %}
+{% block content %}
+<section class="dashboard-grid">
+  <section class="form-shell span-5">
+    <div class="section-heading"><h2>{{ "Edit legal entity" if editing_entity else "Add legal entity" }}</h2></div>
+    <form method="post" class="grid-form">
+      {% if editing_entity %}
+      <input type="hidden" name="entity_id" value="{{ editing_entity.id }}">
+      {% endif %}
+      <label for="name">Name *</label>
+      <input id="name" name="name" value="{{ editing_entity.name if editing_entity else '' }}" required>
+      <label for="address">Address *</label>
+      <input id="address" name="address" value="{{ editing_entity.address if editing_entity else '' }}" required>
+      <label for="om_id">OM id (6 digits) *</label>
+      <input id="om_id" name="om_id" pattern="\d{6}" value="{{ editing_entity.om_id if editing_entity else '' }}" required>
+      <div class="button-row">
+        <button type="submit">{{ "Update legal entity" if editing_entity else "Save legal entity" }}</button>
+        {% if editing_entity %}
+        <a class="button button-secondary" href="{{ url_for('manage_legal_entities') }}">Cancel edit</a>
+        {% endif %}
+      </div>
+    </form>
+  </section>
+
+  <section class="table-card span-7">
+    <div class="section-heading"><h2>Existing legal entities</h2></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Name</th><th>Address</th><th>OM id</th><th>Edit</th></tr></thead>
+        <tbody>
+          {% for entity in entities %}
+          <tr>
+            <td>{{ entity.name }}</td>
+            <td>{{ entity.address }}</td>
+            <td>{{ entity.om_id }}</td>
+            <td>
+              <a class="button button-secondary" href="{{ url_for('manage_legal_entities', edit=entity.id) }}">Edit</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</section>
+{% endblock %}

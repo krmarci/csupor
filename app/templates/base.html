@@ -15,9 +15,9 @@
         --text: #0f172a;
         --text-soft: #475569;
         --text-on-dark: #e2e8f0;
-        --primary: #4f46e5;
-        --primary-strong: #4338ca;
-        --secondary: #06b6d4;
+        --primary: #ea580c;
+        --primary-strong: #c2410c;
+        --secondary: #fb923c;
         --success-bg: rgba(34, 197, 94, 0.12);
         --success-text: #166534;
         --error-bg: rgba(239, 68, 68, 0.12);
@@ -37,9 +37,9 @@
         font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         color: var(--text);
         background:
-          radial-gradient(circle at top left, rgba(6, 182, 212, 0.3), transparent 26%),
-          radial-gradient(circle at top right, rgba(79, 70, 229, 0.28), transparent 28%),
-          linear-gradient(160deg, var(--bg) 0%, #1d4ed8 45%, #ecfeff 100%);
+          radial-gradient(circle at top left, rgba(251, 146, 60, 0.32), transparent 26%),
+          radial-gradient(circle at top right, rgba(234, 88, 12, 0.3), transparent 28%),
+          linear-gradient(160deg, var(--bg) 0%, #c2410c 45%, #fff7ed 100%);
       }
 
       a {
@@ -82,9 +82,9 @@
         border-radius: 14px;
         font-weight: 800;
         letter-spacing: 0.08em;
-        background: linear-gradient(135deg, #818cf8 0%, #22d3ee 100%);
+        background: linear-gradient(135deg, #fb923c 0%, #ea580c 100%);
         color: white;
-        box-shadow: 0 12px 28px rgba(34, 211, 238, 0.3);
+        box-shadow: 0 12px 28px rgba(234, 88, 12, 0.3);
       }
 
       .brand-copy small,
@@ -124,6 +124,37 @@
         gap: 10px;
       }
 
+      .nav-group {
+        position: relative;
+      }
+
+      .nav-group > summary {
+        list-style: none;
+      }
+
+      .nav-group > summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .nav-group-menu {
+        position: absolute;
+        right: 0;
+        top: calc(100% + 8px);
+        min-width: 220px;
+        padding: 10px;
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        background: rgba(15, 23, 42, 0.96);
+        box-shadow: 0 22px 34px rgba(15, 23, 42, 0.35);
+        display: grid;
+        gap: 8px;
+        z-index: 10;
+      }
+
+      .nav-group:not([open]) .nav-group-menu {
+        display: none;
+      }
+
       .nav-link {
         padding: 10px 16px;
         border-radius: 999px;
@@ -147,7 +178,7 @@
         gap: 22px;
         padding: 30px;
         border-radius: var(--radius-lg);
-        background: linear-gradient(140deg, rgba(255, 255, 255, 0.95) 0%, rgba(240, 249, 255, 0.92) 100%);
+        background: linear-gradient(140deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 237, 213, 0.9) 100%);
         border: 1px solid rgba(255, 255, 255, 0.45);
         box-shadow: var(--shadow);
       }
@@ -175,7 +206,7 @@
         font-weight: 700;
         text-transform: uppercase;
         color: var(--primary);
-        background: rgba(79, 70, 229, 0.12);
+        background: rgba(234, 88, 12, 0.14);
       }
 
       .hero-actions,
@@ -223,7 +254,7 @@
 
       .badge {
         color: var(--primary-strong);
-        background: rgba(79, 70, 229, 0.12);
+        background: rgba(234, 88, 12, 0.14);
       }
 
       .pill {
@@ -698,8 +729,20 @@
           <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">Dashboard</a>
           <a class="nav-link {% if request.endpoint == 'edit_profile' %}active{% endif %}" href="{{ url_for('edit_profile') }}">Edit profile</a>
           {% if current_user.privilege.value in ['hr', 'ceo'] %}
-          <a class="nav-link {% if request.endpoint in ['manage_user_profiles', 'edit_user_profile'] %}active{% endif %}" href="{{ url_for('manage_user_profiles') }}">User profiles</a>
-          <a class="nav-link {% if request.endpoint == 'manage_privileges' %}active{% endif %}" href="{{ url_for('manage_privileges') }}">Privileges</a>
+          <details class="nav-group">
+            <summary
+              class="nav-link {% if request.endpoint in ['manage_user_profiles', 'edit_user_profile', 'manage_privileges', 'manage_contracts', 'create_contract', 'edit_contract', 'manage_legal_entities', 'manage_places_of_work'] %}active{% endif %}"
+            >
+              Management
+            </summary>
+            <div class="nav-group-menu">
+              <a class="nav-link {% if request.endpoint in ['manage_user_profiles', 'edit_user_profile'] %}active{% endif %}" href="{{ url_for('manage_user_profiles') }}">User profiles</a>
+              <a class="nav-link {% if request.endpoint == 'manage_privileges' %}active{% endif %}" href="{{ url_for('manage_privileges') }}">Privileges</a>
+              <a class="nav-link {% if request.endpoint in ['manage_contracts', 'create_contract', 'edit_contract'] %}active{% endif %}" href="{{ url_for('manage_contracts') }}">Contracts</a>
+              <a class="nav-link {% if request.endpoint == 'manage_legal_entities' %}active{% endif %}" href="{{ url_for('manage_legal_entities') }}">Legal entities</a>
+              <a class="nav-link {% if request.endpoint == 'manage_places_of_work' %}active{% endif %}" href="{{ url_for('manage_places_of_work') }}">Workplaces</a>
+            </div>
+          </details>
           {% endif %}
           <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
           {% else %}

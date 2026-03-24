@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Create contract' if mode == 'create' else 'Edit contract' }} · CSUPOR Portal{% endblock %}
+{% block content %}
+<section class="form-shell">
+  <div class="section-heading">
+    <div>
+      <h2>{{ 'Create contract' if mode == 'create' else 'Edit contract' }} for {{ target_user.username }}</h2>
+      <p>Fill in contract details. Fields marked with * are required.</p>
+    </div>
+  </div>
+
+  <form method="post" class="grid-form">
+    <div>
+      <label for="contract_type">Contract type *</label>
+      <select id="contract_type" name="contract_type" required>
+        <option value="">Select contract type</option>
+        {% for ct in contract_types %}
+        <option value="{{ ct.value }}" {% if contract.contract_type == ct %}selected{% endif %}>{{ ct.value }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div>
+      <label for="start_date">Start of contract *</label>
+      <input id="start_date" type="date" name="start_date" value="{{ contract.start_date or '' }}" required>
+    </div>
+
+    <div>
+      <label for="end_date">End of contract</label>
+      <input id="end_date" type="date" name="end_date" value="{{ contract.end_date or '' }}">
+    </div>
+
+    <div>
+      <label for="certificate_of_good_conduct_number">Number of certificate of good conduct</label>
+      <input id="certificate_of_good_conduct_number" name="certificate_of_good_conduct_number" value="{{ contract.certificate_of_good_conduct_number or '' }}">
+    </div>
+
+    <div>
+      <label for="certificate_of_good_conduct_date">Date of certificate of good conduct</label>
+      <input id="certificate_of_good_conduct_date" type="date" name="certificate_of_good_conduct_date" value="{{ contract.certificate_of_good_conduct_date or '' }}">
+    </div>
+
+    <div>
+      <label for="job_title">Job title *</label>
+      <input id="job_title" name="job_title" value="{{ contract.job_title or '' }}" required>
+    </div>
+
+    <div>
+      <label for="working_hours_per_week">Working hours per week *</label>
+      <input id="working_hours_per_week" type="number" min="1" name="working_hours_per_week" value="{{ contract.working_hours_per_week or '' }}" required>
+    </div>
+
+    <div>
+      <label for="teacher_classification">Teacher classification</label>
+      <select id="teacher_classification" name="teacher_classification">
+        <option value="">No classification</option>
+        {% for tc in teacher_classifications %}
+        <option value="{{ tc.value }}" {% if contract.teacher_classification == tc %}selected{% endif %}>{{ tc.value }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div>
+      <label for="classification_start_date">Start of classification</label>
+      <input id="classification_start_date" type="date" name="classification_start_date" value="{{ contract.classification_start_date or '' }}">
+    </div>
+
+    <div>
+      <label for="legal_entity_id">Employer *</label>
+      <select id="legal_entity_id" name="legal_entity_id" required>
+        <option value="">Select employer</option>
+        {% for entity in legal_entities %}
+        <option value="{{ entity.id }}" {% if contract.legal_entity_id == entity.id %}selected{% endif %}>{{ entity.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div>
+      <label for="place_of_work_id">Place of work *</label>
+      <select id="place_of_work_id" name="place_of_work_id" required>
+        <option value="">Select place of work</option>
+        {% for place in places_of_work %}
+        <option
+          value="{{ place.id }}"
+          data-entity-id="{{ place.legal_entity_id }}"
+          {% if contract.place_of_work_id == place.id %}selected{% endif %}
+        >
+          {{ place_label_fn(place) }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="button-row">
+      <button type="submit">{{ 'Create contract' if mode == 'create' else 'Save changes' }}</button>
+      <a class="button button-secondary" href="{{ url_for('manage_contracts') }}">Cancel</a>
+    </div>
+  </form>
+</section>
+<script>
+  (() => {
+    const employerSelect = document.getElementById("legal_entity_id");
+    const workplaceSelect = document.getElementById("place_of_work_id");
+    if (!employerSelect || !workplaceSelect) {
+      return;
+    }
+
+    const workplaceOptions = Array.from(workplaceSelect.options).filter((option) => option.value);
+    const employerOptions = Array.from(employerSelect.options).filter((option) => option.value);
+
+    const syncFromEmployer = () => {
+      const selectedEmployerId = employerSelect.value;
+      workplaceOptions.forEach((option) => {
+        const matchesEmployer = !selectedEmployerId || option.dataset.entityId === selectedEmployerId;
+        option.hidden = !matchesEmployer;
+        option.disabled = !matchesEmployer;
+      });
+
+      if (workplaceSelect.value) {
+        const selectedWorkplace = workplaceSelect.options[workplaceSelect.selectedIndex];
+        if (!selectedWorkplace || selectedWorkplace.disabled) {
+          workplaceSelect.value = "";
+        }
+      }
+    };
+
+    const syncFromWorkplace = () => {
+      const selectedWorkplace = workplaceSelect.options[workplaceSelect.selectedIndex];
+      const selectedEmployerFromWorkplace =
+        selectedWorkplace && selectedWorkplace.value ? selectedWorkplace.dataset.entityId : "";
+
+      employerOptions.forEach((option) => {
+        const matchesWorkplace = !selectedEmployerFromWorkplace || option.value === selectedEmployerFromWorkplace;
+        option.hidden = !matchesWorkplace;
+        option.disabled = !matchesWorkplace;
+      });
+
+      if (
+        selectedEmployerFromWorkplace &&
+        employerSelect.value &&
+        employerSelect.value !== selectedEmployerFromWorkplace
+      ) {
+        employerSelect.value = selectedEmployerFromWorkplace;
+      }
+
+      if (!selectedEmployerFromWorkplace) {
+        employerOptions.forEach((option) => {
+          option.hidden = false;
+          option.disabled = false;
+        });
+      }
+    };
+
+    employerSelect.addEventListener("change", () => {
+      syncFromEmployer();
+      syncFromWorkplace();
+    });
+
+    workplaceSelect.addEventListener("change", () => {
+      syncFromWorkplace();
+      syncFromEmployer();
+    });
+
+    syncFromEmployer();
+    syncFromWorkplace();
+  })();
+</script>
+{% endblock %}
