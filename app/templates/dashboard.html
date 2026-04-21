@@ -235,6 +235,18 @@
       </div>
     </section>
 
+    {% if can_manage_leadership %}
+    <section class="card span-12">
+      <div class="section-heading">
+        <div>
+          <h2>Leadership management</h2>
+          <p>HR and CEO users can create and update leadership assignments.</p>
+        </div>
+        <a class="button button-secondary" href="{{ url_for('manage_leadership') }}">Open leadership manager</a>
+      </div>
+    </section>
+    {% endif %}
+
     <section class="card span-12">
       <div class="section-heading">
         <div>

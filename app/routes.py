@@ -11,6 +11,7 @@ from .models import (
     Dependent,
     EducationalQualification,
     Gender,
+    Leadership,
     LegalEntity,
     PlaceOfWork,
     ProfessionalExam,
@@ -189,6 +190,35 @@ def _save_contract_from_form(contract: Contract) -> list[str]:
 
     return errors
 
+
+def _save_leadership_from_form(leadership: Leadership) -> list[str]:
+    legal_entity_id = request.form.get("legal_entity_id", type=int)
+    contract_id = request.form.get("contract_id", type=int)
+
+    leadership.legal_entity_id = legal_entity_id
+    leadership.contract_id = contract_id
+    leadership.start_date = parse_iso_date(request.form.get("start_date"))
+    leadership.end_date = parse_iso_date(request.form.get("end_date"))
+
+    errors = []
+    if not legal_entity_id:
+        errors.append("Legal entity is required.")
+    if not contract_id:
+        errors.append("Contract is required.")
+    if leadership.start_date is None:
+        errors.append("Start date is required.")
+    if leadership.end_date and leadership.start_date and leadership.end_date < leadership.start_date:
+        errors.append("End date cannot be earlier than the start date.")
+
+    if contract_id:
+        contract = db.session.get(Contract, contract_id)
+        if contract is None:
+            errors.append("Selected contract does not exist.")
+        elif legal_entity_id and contract.legal_entity_id != legal_entity_id:
+            errors.append("Selected contract does not belong to the selected legal entity.")
+
+    return errors
+
 def _can_manage_privileges(user: User) -> bool:
     return user.is_authenticated and user.privilege in {UserPrivilege.hr, UserPrivilege.ceo}
 
@@ -293,6 +323,7 @@ def init_routes(app):
             can_manage_privileges=_can_manage_privileges(current_user),
             can_assign_privileges=_can_assign_privileges(current_user),
             can_manage_user_profiles=_can_manage_privileges(current_user),
+            can_manage_leadership=_can_manage_privileges(current_user),
             profile_status_label=_profile_status_label(current_user.profile),
         )
 
@@ -624,6 +655,56 @@ def init_routes(app):
             places_of_work=places,
             place_label_fn=_contract_place_label,
             mode="edit",
+        )
+
+    @app.route("/leadership", methods=["GET", "POST"])
+    @privilege_manager_required
+    def manage_leadership():
+        editing_leadership_id = request.args.get("edit", type=int)
+        if request.method == "POST":
+            leadership_id = request.form.get("leadership_id", type=int)
+            leadership = db.session.get(Leadership, leadership_id) if leadership_id else Leadership()
+            if leadership is None:
+                flash("Leadership record not found.", "error")
+                return redirect(url_for("manage_leadership"))
+
+            errors = _save_leadership_from_form(leadership)
+            if errors:
+                for err in errors:
+                    flash(err, "error")
+                return redirect(url_for("manage_leadership", edit=leadership_id) if leadership_id else url_for("manage_leadership"))
+
+            db.session.add(leadership)
+            db.session.commit()
+            flash("Leadership record updated." if leadership_id else "Leadership record saved.", "success")
+            return redirect(url_for("manage_leadership"))
+
+        legal_entities = LegalEntity.query.order_by(LegalEntity.name.asc()).all()
+        contracts = (
+            Contract.query.join(User)
+            .join(LegalEntity)
+            .order_by(LegalEntity.name.asc(), User.username.asc(), Contract.start_date.desc())
+            .all()
+        )
+        leadership_positions = (
+            Leadership.query.join(LegalEntity)
+            .join(Contract)
+            .order_by(LegalEntity.name.asc(), Leadership.start_date.desc(), Leadership.id.desc())
+            .all()
+        )
+        editing_leadership = None
+        if editing_leadership_id:
+            editing_leadership = db.session.get(Leadership, editing_leadership_id)
+            if editing_leadership is None:
+                flash("Leadership record not found.", "error")
+                return redirect(url_for("manage_leadership"))
+
+        return render_template(
+            "manage_leadership.html",
+            legal_entities=legal_entities,
+            contracts=contracts,
+            leadership_positions=leadership_positions,
+            editing_leadership=editing_leadership,
         )
 
     @app.route("/professional-exam", methods=["GET", "POST"])
