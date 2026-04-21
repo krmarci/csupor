@@ -11,6 +11,7 @@
     </p>
     <div class="hero-actions">
       <a class="button button-primary" href="{{ url_for('edit_profile') }}">Update profile</a>
+      <a class="button button-secondary" href="{{ url_for('change_password') }}">Change password</a>
       <a class="button button-secondary" href="{{ url_for('add_qualification') }}">Add qualification</a>
       <a class="button button-secondary" href="{{ url_for('add_dependent') }}">Add dependent</a>
     </div>
@@ -246,11 +247,14 @@
         </div>
       </div>
     </section>
+    {% endif %}
+
+    {% if can_assign_privileges %}
     <section class="card span-12">
       <div class="section-heading">
         <div>
           <h2>Privilege management</h2>
-          <p>HR and CEO users can update role assignments for newly registered accounts.</p>
+          <p>HR, CEO, and developer users can update role assignments for newly registered accounts.</p>
         </div>
         <a class="button button-secondary" href="{{ url_for('manage_privileges') }}">Open privilege manager</a>
       </div>
