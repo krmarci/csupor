@@ -111,7 +111,17 @@
         </div>
         <div class="field">
           <label for="marital_status">Marital status</label>
-          <input id="marital_status" name="marital_status" value="{{ profile.marital_status or '' }}">
+          <select id="marital_status" name="marital_status">
+            <option value="">Select marital status</option>
+            {% for marital_status in marital_statuses %}
+            <option
+              value="{{ marital_status.value }}"
+              {% if profile.marital_status and profile.marital_status.value == marital_status.value %}selected{% endif %}
+            >
+              {{ marital_status.value }}
+            </option>
+            {% endfor %}
+          </select>
         </div>
         <div class="field field-full">
           <label for="disability">Disability</label>

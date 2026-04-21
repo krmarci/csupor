@@ -9,6 +9,7 @@ from .models import (
     Contract,
     ContractType,
     Dependent,
+    DependentType,
     EducationalQualification,
     Gender,
     Leadership,
@@ -16,6 +17,7 @@ from .models import (
     LegalEntity,
     PlaceOfWork,
     ProfessionalExam,
+    MaritalStatus,
     TeacherClassification,
     User,
     UserPrivilege,
@@ -106,7 +108,8 @@ def _save_profile_from_form(profile: UserProfile) -> list[str]:
     profile.temporary_address = _normalize_optional_text(request.form.get("temporary_address"))
     profile.phone_number = _normalize_optional_text(request.form.get("phone_number"))
     profile.bank_account_number = _normalize_optional_text(request.form.get("bank_account_number"))
-    profile.marital_status = _normalize_optional_text(request.form.get("marital_status"))
+    marital_status_value = _normalize_optional_text(request.form.get("marital_status"))
+    profile.marital_status = MaritalStatus(marital_status_value) if marital_status_value else None
     profile.disability = _normalize_optional_text(request.form.get("disability"))
     return []
 
@@ -116,6 +119,7 @@ def _render_profile_editor(profile: UserProfile, target_user: User, *, manager_m
         "profile.html",
         profile=profile,
         genders=Gender,
+        marital_statuses=MaritalStatus,
         manager_mode=manager_mode,
         target_user=target_user,
     )
@@ -446,20 +450,25 @@ def init_routes(app):
     def add_dependent():
         if request.method == "POST":
             name = request.form.get("name", "").strip()
+            dependent_type_raw = request.form.get("dependent_type", "").strip()
             social_security_number = request.form.get("social_security_number", "").strip()
             if not name:
                 flash("Dependent name is required.", "error")
-                return render_template("dependent_form.html")
+                return render_template("dependent_form.html", dependent_types=DependentType)
+            if dependent_type_raw not in {item.value for item in DependentType}:
+                flash("Dependent type is required.", "error")
+                return render_template("dependent_form.html", dependent_types=DependentType)
             validation_error = _validate_digit_field(
                 "Dependent social security number", social_security_number, 9
             )
             if validation_error:
                 flash(validation_error, "error")
-                return render_template("dependent_form.html")
+                return render_template("dependent_form.html", dependent_types=DependentType)
 
             dependent = Dependent(
                 user_id=current_user.id,
                 name=name,
+                dependent_type=DependentType(dependent_type_raw),
                 date_of_birth=parse_iso_date(request.form.get("date_of_birth")),
                 social_security_number=social_security_number,
                 dependency_start=parse_iso_date(request.form.get("dependency_start")),
@@ -470,7 +479,7 @@ def init_routes(app):
             flash("Dependent added.", "success")
             return redirect(url_for("dashboard"))
 
-        return render_template("dependent_form.html")
+        return render_template("dependent_form.html", dependent_types=DependentType)
 
     @app.route("/qualifications/add", methods=["GET", "POST"])
     @login_required
@@ -513,14 +522,19 @@ def init_routes(app):
             name = _normalize_optional_text(request.form.get("name"))
             address = _normalize_optional_text(request.form.get("address"))
             om_id = _normalize_optional_text(request.form.get("om_id"))
+            tax_number = _normalize_optional_text(request.form.get("tax_number"))
 
-            if not name or not address:
-                flash("Name and address are required.", "error")
+            if not name or not address or not tax_number:
+                flash("Name, address, and tax number are required.", "error")
                 return redirect(url_for("manage_legal_entities"))
 
             om_error = _validate_om_id(om_id)
             if om_error:
                 flash(om_error, "error")
+                return redirect(url_for("manage_legal_entities"))
+            tax_error = _validate_digit_field("Tax number", tax_number, 10)
+            if tax_error:
+                flash(tax_error, "error")
                 return redirect(url_for("manage_legal_entities"))
 
             entity = db.session.get(LegalEntity, entity_id) if entity_id else LegalEntity()
@@ -531,6 +545,7 @@ def init_routes(app):
             entity.name = name
             entity.address = address
             entity.om_id = om_id
+            entity.tax_number = tax_number
             db.session.add(entity)
             db.session.commit()
             flash("Legal entity updated." if entity_id else "Legal entity saved.", "success")
