@@ -12,6 +12,7 @@ from .models import (
     EducationalQualification,
     Gender,
     Leadership,
+    LeadershipPosition,
     LegalEntity,
     PlaceOfWork,
     ProfessionalExam,
@@ -194,9 +195,11 @@ def _save_contract_from_form(contract: Contract) -> list[str]:
 def _save_leadership_from_form(leadership: Leadership) -> list[str]:
     legal_entity_id = request.form.get("legal_entity_id", type=int)
     contract_id = request.form.get("contract_id", type=int)
+    position_value = request.form.get("position")
 
     leadership.legal_entity_id = legal_entity_id
     leadership.contract_id = contract_id
+    leadership.position = LeadershipPosition(position_value) if position_value in {item.value for item in LeadershipPosition} else None
     leadership.start_date = parse_iso_date(request.form.get("start_date"))
     leadership.end_date = parse_iso_date(request.form.get("end_date"))
 
@@ -205,6 +208,8 @@ def _save_leadership_from_form(leadership: Leadership) -> list[str]:
         errors.append("Legal entity is required.")
     if not contract_id:
         errors.append("Contract is required.")
+    if leadership.position is None:
+        errors.append("Leadership position is required.")
     if leadership.start_date is None:
         errors.append("Start date is required.")
     if leadership.end_date and leadership.start_date and leadership.end_date < leadership.start_date:
