@@ -14,6 +14,8 @@
       <input id="address" name="address" value="{{ editing_entity.address if editing_entity else '' }}" required>
       <label for="om_id">OM id (6 digits) *</label>
       <input id="om_id" name="om_id" pattern="\d{6}" value="{{ editing_entity.om_id if editing_entity else '' }}" required>
+      <label for="tax_number">Tax number (format: 12345678-9-01) *</label>
+      <input id="tax_number" name="tax_number" pattern="\d{8}-\d-\d{2}" value="{{ format_legal_entity_tax_number(editing_entity.tax_number) if editing_entity else '' }}" placeholder="12345678-9-01" required>
       <div class="button-row">
         <button type="submit">{{ "Update legal entity" if editing_entity else "Save legal entity" }}</button>
         {% if editing_entity %}
@@ -27,13 +29,14 @@
     <div class="section-heading"><h2>Existing legal entities</h2></div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Name</th><th>Address</th><th>OM id</th><th>Edit</th></tr></thead>
+        <thead><tr><th>Name</th><th>Address</th><th>OM id</th><th>Tax number</th><th>Edit</th></tr></thead>
         <tbody>
           {% for entity in entities %}
           <tr>
             <td>{{ entity.name }}</td>
             <td>{{ entity.address }}</td>
             <td>{{ entity.om_id }}</td>
+            <td>{{ format_legal_entity_tax_number(entity.tax_number) }}</td>
             <td>
               <a class="button button-secondary" href="{{ url_for('manage_legal_entities', edit=entity.id) }}">Edit</a>
             </td>

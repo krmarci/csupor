@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS user_profiles (
   temporary_address VARCHAR(255) NULL,
   phone_number VARCHAR(40) NULL,
   bank_account_number VARCHAR(64) NULL,
-  marital_status VARCHAR(64) NULL,
+  marital_status ENUM('single', 'married', 'divorced', 'widowed', 'civil partnership') NULL,
   disability VARCHAR(255) NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -69,6 +69,7 @@ CREATE TABLE IF NOT EXISTS dependents (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT,
   user_id INT UNSIGNED NOT NULL,
   name VARCHAR(120) NOT NULL,
+  dependent_type ENUM('child', 'other dependent') NOT NULL DEFAULT 'child',
   date_of_birth DATE NOT NULL,
   social_security_number CHAR(9) NOT NULL,
   dependency_start DATE NOT NULL,
@@ -130,11 +131,14 @@ CREATE TABLE IF NOT EXISTS legal_entities (
   name VARCHAR(120) NOT NULL,
   address VARCHAR(255) NOT NULL,
   om_id CHAR(6) NOT NULL,
+  tax_number CHAR(11) NOT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   CONSTRAINT chk_legal_entities_om_id_digits
-    CHECK (om_id REGEXP '^[0-9]{6}$')
+    CHECK (om_id REGEXP '^[0-9]{6}$'),
+  CONSTRAINT chk_legal_entities_tax_number_digits
+    CHECK (tax_number REGEXP '^[0-9]{11}$')
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS places_of_work (
@@ -154,7 +158,7 @@ CREATE TABLE IF NOT EXISTS places_of_work (
 CREATE TABLE IF NOT EXISTS contracts (
   id INT NOT NULL AUTO_INCREMENT,
   user_id INT UNSIGNED NOT NULL,
-  contract_type ENUM('pedagogue', 'assistant in educational and training work', 'employee according to the Labour Code') NOT NULL,
+  contract_type ENUM('Teacher', 'Teaching Assistant', 'Nursery Assistant', 'Secretary', 'Employee under the Labour Code') NOT NULL,
   start_date DATE NOT NULL,
   end_date DATE NULL,
   certificate_of_good_conduct_number VARCHAR(64) NULL,

@@ -31,10 +31,8 @@
       <table>
         <thead>
           <tr>
-            <th>User ID</th>
-            <th>Username</th>
+            <th>Name</th>
             <th>E-mail</th>
-            <th>Privilege</th>
             <th>Profile status</th>
             <th>Action</th>
           </tr>
@@ -42,10 +40,8 @@
         <tbody>
           {% for user in users %}
           <tr>
-            <td>{{ user.id }}</td>
-            <td><strong>{{ user.username }}</strong></td>
+            <td><strong>{{ user.profile.full_name if user.profile and user.profile.full_name else user.username }}</strong></td>
             <td>{{ user.email }}</td>
-            <td><span class="badge">{{ user.privilege.value }}</span></td>
             <td>
               {% if user.profile and user.profile.full_name %}
               <span class="pill">Profile started</span>
