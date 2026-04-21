@@ -193,11 +193,28 @@ def _can_manage_privileges(user: User) -> bool:
     return user.is_authenticated and user.privilege in {UserPrivilege.hr, UserPrivilege.ceo}
 
 
+def _can_assign_privileges(user: User) -> bool:
+    return user.is_authenticated and user.privilege in {UserPrivilege.hr, UserPrivilege.ceo, UserPrivilege.developer}
+
+
 def privilege_manager_required(view_func):
     @wraps(view_func)
     @login_required
     def wrapped_view(*args, **kwargs):
         if not _can_manage_privileges(current_user):
+            abort(403)
+        return view_func(*args, **kwargs)
+
+    return wrapped_view
+
+
+
+
+def privilege_assignment_required(view_func):
+    @wraps(view_func)
+    @login_required
+    def wrapped_view(*args, **kwargs):
+        if not _can_assign_privileges(current_user):
             abort(403)
         return view_func(*args, **kwargs)
 
@@ -274,12 +291,13 @@ def init_routes(app):
         return render_template(
             "dashboard.html",
             can_manage_privileges=_can_manage_privileges(current_user),
+            can_assign_privileges=_can_assign_privileges(current_user),
             can_manage_user_profiles=_can_manage_privileges(current_user),
             profile_status_label=_profile_status_label(current_user.profile),
         )
 
     @app.route("/users/privileges", methods=["GET", "POST"])
-    @privilege_manager_required
+    @privilege_assignment_required
     def manage_privileges():
         if request.method == "POST":
             user_id = request.form.get("user_id", type=int)
@@ -311,6 +329,34 @@ def init_routes(app):
             users=users,
             privileges=MANAGEABLE_PRIVILEGES,
         )
+
+    @app.route("/password", methods=["GET", "POST"])
+    @login_required
+    def change_password():
+        if request.method == "POST":
+            current_password = request.form.get("current_password", "")
+            new_password = request.form.get("new_password", "")
+            new_password_confirm = request.form.get("new_password_confirm", "")
+
+            if not current_user.check_password(current_password):
+                flash("Current password is incorrect.", "error")
+                return render_template("change_password.html")
+
+            if not new_password:
+                flash("New password is required.", "error")
+                return render_template("change_password.html")
+
+            if new_password != new_password_confirm:
+                flash("New password and confirmation do not match.", "error")
+                return render_template("change_password.html")
+
+            current_user.set_password(new_password)
+            db.session.add(current_user)
+            db.session.commit()
+            flash("Password updated successfully.", "success")
+            return redirect(url_for("dashboard"))
+
+        return render_template("change_password.html")
 
     @app.route("/profile", methods=["GET", "POST"])
     @login_required

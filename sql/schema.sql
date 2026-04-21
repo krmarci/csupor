@@ -17,6 +17,18 @@ CREATE TABLE IF NOT EXISTS users (
   UNIQUE KEY uq_users_username (username)
 ) ENGINE=InnoDB;
 
+INSERT INTO users (email, username, password_hash, privilege)
+VALUES (
+  'admin@csupor.matedev.hu',
+  'admin',
+  'scrypt:32768:8:1$F7DowUSAoUixs84T$274b978abad81b5c326b4443cfbc498921e2be34e7e3c61f76b019833af034def12ed0542c52ac7670fdee803ba6ac1ddfcaddac0e90901c2276b2cc4df60113',
+  'developer'
+)
+ON DUPLICATE KEY UPDATE
+  email = VALUES(email),
+  password_hash = VALUES(password_hash),
+  privilege = VALUES(privilege);
+
 CREATE TABLE IF NOT EXISTS user_profiles (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT,
   user_id INT UNSIGNED NOT NULL,
