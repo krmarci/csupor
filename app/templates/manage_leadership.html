@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Leadership · CSUPOR Portal{% endblock %}
+{% block content %}
+<section class="dashboard-grid">
+  <section class="form-shell span-5">
+    <div class="section-heading"><h2>{{ "Edit leadership" if editing_leadership else "Add leadership" }}</h2></div>
+    <form method="post" class="grid-form">
+      {% if editing_leadership %}
+      <input type="hidden" name="leadership_id" value="{{ editing_leadership.id }}">
+      {% endif %}
+
+      <label for="legal_entity_id">Legal entity *</label>
+      <select id="legal_entity_id" name="legal_entity_id" required>
+        <option value="">Select legal entity</option>
+        {% for entity in legal_entities %}
+        <option
+          value="{{ entity.id }}"
+          {% if editing_leadership and editing_leadership.legal_entity_id == entity.id %}selected{% endif %}
+        >
+          {{ entity.name }}
+        </option>
+        {% endfor %}
+      </select>
+
+      <label for="contract_id">Contract *</label>
+      <select id="contract_id" name="contract_id" required>
+        <option value="">Select contract</option>
+        {% for contract in contracts %}
+        <option
+          value="{{ contract.id }}"
+          {% if editing_leadership and editing_leadership.contract_id == contract.id %}selected{% endif %}
+        >
+          #{{ contract.id }} · {{ contract.user.username }} · {{ contract.employer.name }}
+        </option>
+        {% endfor %}
+      </select>
+
+      <label for="start_date">Start date *</label>
+      <input
+        id="start_date"
+        name="start_date"
+        type="date"
+        value="{{ editing_leadership.start_date if editing_leadership and editing_leadership.start_date else '' }}"
+        required
+      >
+
+      <label for="end_date">End date</label>
+      <input
+        id="end_date"
+        name="end_date"
+        type="date"
+        value="{{ editing_leadership.end_date if editing_leadership and editing_leadership.end_date else '' }}"
+      >
+
+      <div class="button-row">
+        <button type="submit">{{ "Update leadership" if editing_leadership else "Save leadership" }}</button>
+        {% if editing_leadership %}
+        <a class="button button-secondary" href="{{ url_for('manage_leadership') }}">Cancel edit</a>
+        {% endif %}
+      </div>
+    </form>
+  </section>
+
+  <section class="table-card span-7">
+    <div class="section-heading">
+      <div>
+        <h2>Existing leadership positions</h2>
+        <p>Manage leadership assignments by legal entity and contract.</p>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Legal entity</th>
+            <th>Contract</th>
+            <th>Start date</th>
+            <th>End date</th>
+            <th>Edit</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for leadership in leadership_positions %}
+          <tr>
+            <td>{{ leadership.legal_entity.name }}</td>
+            <td>#{{ leadership.contract.id }} · {{ leadership.contract.user.username }}</td>
+            <td>{{ leadership.start_date }}</td>
+            <td>{{ leadership.end_date or '—' }}</td>
+            <td>
+              <a class="button button-secondary" href="{{ url_for('manage_leadership', edit=leadership.id) }}">Edit</a>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="5">No leadership records have been added yet.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</section>
+{% endblock %}

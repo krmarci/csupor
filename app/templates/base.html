@@ -729,10 +729,10 @@
           <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">Dashboard</a>
           <a class="nav-link {% if request.endpoint == 'edit_profile' %}active{% endif %}" href="{{ url_for('edit_profile') }}">Edit profile</a>
           <a class="nav-link {% if request.endpoint == 'change_password' %}active{% endif %}" href="{{ url_for('change_password') }}">Change password</a>
-          {% if current_user.privilege.value in ['hr', 'ceo', 'developer'] %}
+          {% if current_user.privilege.value in ['hr', 'ceo'] %}
           <details class="nav-group">
             <summary
-              class="nav-link {% if request.endpoint in ['manage_user_profiles', 'edit_user_profile', 'manage_privileges', 'manage_contracts', 'create_contract', 'edit_contract', 'manage_legal_entities', 'manage_places_of_work'] %}active{% endif %}"
+              class="nav-link {% if request.endpoint in ['manage_user_profiles', 'edit_user_profile', 'manage_privileges', 'manage_contracts', 'create_contract', 'edit_contract', 'manage_legal_entities', 'manage_places_of_work', 'manage_leadership'] %}active{% endif %}"
             >
               Management
             </summary>
@@ -740,6 +740,7 @@
               <a class="nav-link {% if request.endpoint in ['manage_user_profiles', 'edit_user_profile'] %}active{% endif %}" href="{{ url_for('manage_user_profiles') }}">User profiles</a>
               <a class="nav-link {% if request.endpoint == 'manage_privileges' %}active{% endif %}" href="{{ url_for('manage_privileges') }}">Privileges</a>
               <a class="nav-link {% if request.endpoint in ['manage_contracts', 'create_contract', 'edit_contract'] %}active{% endif %}" href="{{ url_for('manage_contracts') }}">Contracts</a>
+              <a class="nav-link {% if request.endpoint == 'manage_leadership' %}active{% endif %}" href="{{ url_for('manage_leadership') }}">Leadership</a>
               <a class="nav-link {% if request.endpoint == 'manage_legal_entities' %}active{% endif %}" href="{{ url_for('manage_legal_entities') }}">Legal entities</a>
               <a class="nav-link {% if request.endpoint == 'manage_places_of_work' %}active{% endif %}" href="{{ url_for('manage_places_of_work') }}">Workplaces</a>
             </div>
