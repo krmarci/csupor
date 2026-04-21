@@ -23,9 +23,24 @@ class Gender(enum.Enum):
 
 
 class ContractType(enum.Enum):
-    pedagogue = "pedagogue"
-    assistant_in_educational_and_training_work = "assistant in educational and training work"
-    employee_according_to_the_labour_code = "employee according to the Labour Code"
+    teacher = "Teacher"
+    teaching_assistant = "Teaching Assistant"
+    nursery_assistant = "Nursery Assistant"
+    secretary = "Secretary"
+    employee_under_the_labour_code = "Employee under the Labour Code"
+
+
+class MaritalStatus(enum.Enum):
+    single = "single"
+    married = "married"
+    divorced = "divorced"
+    widowed = "widowed"
+    civil_partnership = "civil partnership"
+
+
+class DependentType(enum.Enum):
+    child = "child"
+    other_dependent = "other dependent"
 
 
 class TeacherClassification(enum.Enum):
@@ -88,7 +103,7 @@ class UserProfile(db.Model):
     temporary_address = db.Column(db.String(255), nullable=True)
     phone_number = db.Column(db.String(40), nullable=True)
     bank_account_number = db.Column(db.String(64), nullable=True)
-    marital_status = db.Column(db.String(64), nullable=True)
+    marital_status = db.Column(db.Enum(MaritalStatus), nullable=True)
     disability = db.Column(db.String(255), nullable=True)
 
     user = db.relationship("User", back_populates="profile")
@@ -101,6 +116,7 @@ class Dependent(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
 
     name = db.Column(db.String(120), nullable=False)
+    dependent_type = db.Column(db.Enum(DependentType), nullable=False, default=DependentType.child)
     date_of_birth = db.Column(db.Date, nullable=False)
     social_security_number = db.Column(db.String(9), nullable=False)
     dependency_start = db.Column(db.Date, nullable=False)
@@ -145,6 +161,7 @@ class LegalEntity(db.Model):
     name = db.Column(db.String(120), nullable=False)
     address = db.Column(db.String(255), nullable=False)
     om_id = db.Column(db.String(6), nullable=False)
+    tax_number = db.Column(db.String(10), nullable=False)
 
     places_of_work = db.relationship("PlaceOfWork", back_populates="legal_entity", cascade="all, delete-orphan")
     contracts = db.relationship("Contract", back_populates="employer")
