@@ -36,6 +36,11 @@ class TeacherClassification(enum.Enum):
     research_teacher = "Research Teacher"
 
 
+class LeadershipPosition(enum.Enum):
+    principal = "principal"
+    deputy_principal = "deputy principal"
+
+
 class User(UserMixin, db.Model):
     __tablename__ = "users"
 
@@ -143,6 +148,7 @@ class LegalEntity(db.Model):
 
     places_of_work = db.relationship("PlaceOfWork", back_populates="legal_entity", cascade="all, delete-orphan")
     contracts = db.relationship("Contract", back_populates="employer")
+    leadership_positions = db.relationship("Leadership", back_populates="legal_entity")
 
 
 class PlaceOfWork(db.Model):
@@ -176,6 +182,21 @@ class Contract(db.Model):
     user = db.relationship("User", back_populates="contracts")
     employer = db.relationship("LegalEntity", back_populates="contracts")
     place_of_work = db.relationship("PlaceOfWork", back_populates="contracts")
+    leadership_positions = db.relationship("Leadership", back_populates="contract", cascade="all, delete-orphan")
+
+
+class Leadership(db.Model):
+    __tablename__ = "leadership"
+
+    id = db.Column(db.Integer, primary_key=True)
+    legal_entity_id = db.Column(db.Integer, db.ForeignKey("legal_entities.id"), nullable=False)
+    contract_id = db.Column(db.Integer, db.ForeignKey("contracts.id"), nullable=False)
+    position = db.Column(db.Enum(LeadershipPosition), nullable=False, default=LeadershipPosition.principal)
+    start_date = db.Column(db.Date, nullable=False)
+    end_date = db.Column(db.Date, nullable=True)
+
+    legal_entity = db.relationship("LegalEntity", back_populates="leadership_positions")
+    contract = db.relationship("Contract", back_populates="leadership_positions")
 
 
 @login_manager.user_loader
