@@ -9,6 +9,10 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from . import db, login_manager
 
 
+def _enum_values(enum_type: type[enum.Enum]) -> list[str]:
+    return [member.value for member in enum_type]
+
+
 class UserPrivilege(enum.Enum):
     employee = "employee"
     hr = "hr"
@@ -63,7 +67,11 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     username = db.Column(db.String(50), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
-    privilege = db.Column(db.Enum(UserPrivilege), nullable=False, default=UserPrivilege.employee)
+    privilege = db.Column(
+        db.Enum(UserPrivilege, values_callable=_enum_values),
+        nullable=False,
+        default=UserPrivilege.employee,
+    )
 
     profile = db.relationship("UserProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
     dependents = db.relationship("Dependent", back_populates="user", cascade="all, delete-orphan")
@@ -92,7 +100,7 @@ class UserProfile(db.Model):
     name_at_birth = db.Column(db.String(120), nullable=True)
     date_of_birth = db.Column(db.Date, nullable=True)
     place_of_birth = db.Column(db.String(120), nullable=True)
-    gender = db.Column(db.Enum(Gender), nullable=True)
+    gender = db.Column(db.Enum(Gender, values_callable=_enum_values), nullable=True)
     mothers_maiden_name = db.Column(db.String(120), nullable=True)
     citizenships = db.Column(db.String(255), nullable=True)
     social_security_number = db.Column(db.String(9), nullable=True)
@@ -103,7 +111,7 @@ class UserProfile(db.Model):
     temporary_address = db.Column(db.String(255), nullable=True)
     phone_number = db.Column(db.String(40), nullable=True)
     bank_account_number = db.Column(db.String(64), nullable=True)
-    marital_status = db.Column(db.Enum(MaritalStatus), nullable=True)
+    marital_status = db.Column(db.Enum(MaritalStatus, values_callable=_enum_values), nullable=True)
     disability = db.Column(db.String(255), nullable=True)
 
     user = db.relationship("User", back_populates="profile")
@@ -116,7 +124,11 @@ class Dependent(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
 
     name = db.Column(db.String(120), nullable=False)
-    dependent_type = db.Column(db.Enum(DependentType), nullable=False, default=DependentType.child)
+    dependent_type = db.Column(
+        db.Enum(DependentType, values_callable=_enum_values),
+        nullable=False,
+        default=DependentType.child,
+    )
     date_of_birth = db.Column(db.Date, nullable=False)
     social_security_number = db.Column(db.String(9), nullable=False)
     dependency_start = db.Column(db.Date, nullable=False)
@@ -184,14 +196,17 @@ class Contract(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    contract_type = db.Column(db.Enum(ContractType), nullable=False)
+    contract_type = db.Column(db.Enum(ContractType, values_callable=_enum_values), nullable=False)
     start_date = db.Column(db.Date, nullable=False)
     end_date = db.Column(db.Date, nullable=True)
     certificate_of_good_conduct_number = db.Column(db.String(64), nullable=True)
     certificate_of_good_conduct_date = db.Column(db.Date, nullable=True)
     job_title = db.Column(db.String(120), nullable=False)
     working_hours_per_week = db.Column(db.Integer, nullable=False)
-    teacher_classification = db.Column(db.Enum(TeacherClassification), nullable=True)
+    teacher_classification = db.Column(
+        db.Enum(TeacherClassification, values_callable=_enum_values),
+        nullable=True,
+    )
     classification_start_date = db.Column(db.Date, nullable=True)
     legal_entity_id = db.Column(db.Integer, db.ForeignKey("legal_entities.id"), nullable=False)
     place_of_work_id = db.Column(db.Integer, db.ForeignKey("places_of_work.id"), nullable=False)
@@ -208,7 +223,11 @@ class Leadership(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     legal_entity_id = db.Column(db.Integer, db.ForeignKey("legal_entities.id"), nullable=False)
     contract_id = db.Column(db.Integer, db.ForeignKey("contracts.id"), nullable=False)
-    position = db.Column(db.Enum(LeadershipPosition), nullable=False, default=LeadershipPosition.principal)
+    position = db.Column(
+        db.Enum(LeadershipPosition, values_callable=_enum_values),
+        nullable=False,
+        default=LeadershipPosition.principal,
+    )
     start_date = db.Column(db.Date, nullable=False)
     end_date = db.Column(db.Date, nullable=True)
 
