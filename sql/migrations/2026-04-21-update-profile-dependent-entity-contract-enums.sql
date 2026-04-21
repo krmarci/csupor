@@ -28,11 +28,14 @@ ALTER TABLE legal_entities
     CHECK (tax_number REGEXP '^[0-9]{10}$');
 
 UPDATE contracts
-SET contract_type = CASE contract_type
-  WHEN 'pedagogue' THEN 'Teacher'
-  WHEN 'assistant in educational and training work' THEN 'Teaching Assistant'
-  WHEN 'employee according to the Labour Code' THEN 'Employee under the Labour Code'
-  ELSE contract_type
+SET contract_type = CASE
+  WHEN contract_type IS NULL OR TRIM(contract_type) = '' THEN 'Employee under the Labour Code'
+  WHEN LOWER(TRIM(contract_type)) IN ('pedagogue', 'teacher') THEN 'Teacher'
+  WHEN LOWER(TRIM(contract_type)) IN ('assistant in educational and training work', 'teaching assistant') THEN 'Teaching Assistant'
+  WHEN LOWER(TRIM(contract_type)) IN ('nursery assistant') THEN 'Nursery Assistant'
+  WHEN LOWER(TRIM(contract_type)) IN ('secretary') THEN 'Secretary'
+  WHEN LOWER(TRIM(contract_type)) IN ('employee according to the labour code', 'employee under the labour code') THEN 'Employee under the Labour Code'
+  ELSE 'Employee under the Labour Code'
 END;
 
 ALTER TABLE contracts
