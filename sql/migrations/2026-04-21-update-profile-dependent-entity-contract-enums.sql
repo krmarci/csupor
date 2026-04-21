@@ -27,6 +27,9 @@ ALTER TABLE legal_entities
   ADD CONSTRAINT chk_legal_entities_tax_number_digits
     CHECK (tax_number REGEXP '^[0-9]{10}$');
 
+ALTER TABLE contracts
+  MODIFY COLUMN contract_type VARCHAR(64) NOT NULL;
+
 UPDATE contracts
 SET contract_type = CASE
   WHEN contract_type IS NULL OR TRIM(contract_type) = '' THEN 'Employee under the Labour Code'
