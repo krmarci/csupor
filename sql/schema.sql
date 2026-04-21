@@ -193,6 +193,7 @@ CREATE TABLE IF NOT EXISTS leadership (
   id INT NOT NULL AUTO_INCREMENT,
   legal_entity_id INT NOT NULL,
   contract_id INT NOT NULL,
+  position ENUM('principal', 'deputy principal') NOT NULL DEFAULT 'principal',
   start_date DATE NOT NULL,
   end_date DATE NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

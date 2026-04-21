@@ -35,6 +35,13 @@
         {% endfor %}
       </select>
 
+      <label for="position">Position *</label>
+      <select id="position" name="position" required>
+        <option value="">Select leadership position</option>
+        <option value="principal" {% if editing_leadership and editing_leadership.position.value == "principal" %}selected{% endif %}>Principal</option>
+        <option value="deputy principal" {% if editing_leadership and editing_leadership.position.value == "deputy principal" %}selected{% endif %}>Deputy principal</option>
+      </select>
+
       <label for="start_date">Start date *</label>
       <input
         id="start_date"
@@ -75,6 +82,7 @@
           <tr>
             <th>Legal entity</th>
             <th>Contract</th>
+            <th>Position</th>
             <th>Start date</th>
             <th>End date</th>
             <th>Edit</th>
@@ -85,6 +93,7 @@
           <tr>
             <td>{{ leadership.legal_entity.name }}</td>
             <td>{{ leadership.contract.user.profile.full_name if leadership.contract.user.profile and leadership.contract.user.profile.full_name else leadership.contract.user.username }} · {{ leadership.contract.start_date }}</td>
+            <td>{{ leadership.position.value|title }}</td>
             <td>{{ leadership.start_date }}</td>
             <td>{{ leadership.end_date or '—' }}</td>
             <td>
@@ -93,7 +102,7 @@
           </tr>
           {% else %}
           <tr>
-            <td colspan="5">No leadership records have been added yet.</td>
+            <td colspan="6">No leadership records have been added yet.</td>
           </tr>
           {% endfor %}
         </tbody>

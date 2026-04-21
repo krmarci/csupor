@@ -36,6 +36,11 @@ class TeacherClassification(enum.Enum):
     research_teacher = "Research Teacher"
 
 
+class LeadershipPosition(enum.Enum):
+    principal = "principal"
+    deputy_principal = "deputy principal"
+
+
 class User(UserMixin, db.Model):
     __tablename__ = "users"
 
@@ -186,6 +191,7 @@ class Leadership(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     legal_entity_id = db.Column(db.Integer, db.ForeignKey("legal_entities.id"), nullable=False)
     contract_id = db.Column(db.Integer, db.ForeignKey("contracts.id"), nullable=False)
+    position = db.Column(db.Enum(LeadershipPosition), nullable=False, default=LeadershipPosition.principal)
     start_date = db.Column(db.Date, nullable=False)
     end_date = db.Column(db.Date, nullable=True)
 
