@@ -131,14 +131,14 @@ CREATE TABLE IF NOT EXISTS legal_entities (
   name VARCHAR(120) NOT NULL,
   address VARCHAR(255) NOT NULL,
   om_id CHAR(6) NOT NULL,
-  tax_number CHAR(10) NOT NULL,
+  tax_number CHAR(11) NOT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   CONSTRAINT chk_legal_entities_om_id_digits
     CHECK (om_id REGEXP '^[0-9]{6}$'),
   CONSTRAINT chk_legal_entities_tax_number_digits
-    CHECK (tax_number REGEXP '^[0-9]{10}$')
+    CHECK (tax_number REGEXP '^[0-9]{11}$')
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS places_of_work (

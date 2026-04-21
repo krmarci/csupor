@@ -14,8 +14,8 @@
       <input id="address" name="address" value="{{ editing_entity.address if editing_entity else '' }}" required>
       <label for="om_id">OM id (6 digits) *</label>
       <input id="om_id" name="om_id" pattern="\d{6}" value="{{ editing_entity.om_id if editing_entity else '' }}" required>
-      <label for="tax_number">Tax number (10 digits) *</label>
-      <input id="tax_number" name="tax_number" pattern="\d{10}" value="{{ editing_entity.tax_number if editing_entity else '' }}" required>
+      <label for="tax_number">Tax number (format: 12345678-9-01) *</label>
+      <input id="tax_number" name="tax_number" pattern="\d{8}-\d-\d{2}" value="{{ format_legal_entity_tax_number(editing_entity.tax_number) if editing_entity else '' }}" placeholder="12345678-9-01" required>
       <div class="button-row">
         <button type="submit">{{ "Update legal entity" if editing_entity else "Save legal entity" }}</button>
         {% if editing_entity %}
@@ -36,7 +36,7 @@
             <td>{{ entity.name }}</td>
             <td>{{ entity.address }}</td>
             <td>{{ entity.om_id }}</td>
-            <td>{{ entity.tax_number }}</td>
+            <td>{{ format_legal_entity_tax_number(entity.tax_number) }}</td>
             <td>
               <a class="button button-secondary" href="{{ url_for('manage_legal_entities', edit=entity.id) }}">Edit</a>
             </td>

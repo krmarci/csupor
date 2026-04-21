@@ -173,7 +173,7 @@ class LegalEntity(db.Model):
     name = db.Column(db.String(120), nullable=False)
     address = db.Column(db.String(255), nullable=False)
     om_id = db.Column(db.String(6), nullable=False)
-    tax_number = db.Column(db.String(10), nullable=False)
+    tax_number = db.Column(db.String(11), nullable=False)
 
     places_of_work = db.relationship("PlaceOfWork", back_populates="legal_entity", cascade="all, delete-orphan")
     contracts = db.relationship("Contract", back_populates="employer")

@@ -78,6 +78,20 @@ def _validate_digit_field(label: str, value: str | None, length: int) -> str | N
     return None
 
 
+def _normalize_legal_entity_tax_number(value: str | None) -> str | None:
+    normalized = _normalize_optional_text(value)
+    if not normalized:
+        return None
+    return normalized.replace("-", "")
+
+
+def _format_legal_entity_tax_number(value: str | None) -> str:
+    normalized = _normalize_legal_entity_tax_number(value)
+    if not normalized or len(normalized) != 11 or not normalized.isdigit():
+        return value or ""
+    return f"{normalized[:8]}-{normalized[8]}-{normalized[9:]}"
+
+
 def _save_profile_from_form(profile: UserProfile) -> list[str]:
     social_security_number = _normalize_optional_text(request.form.get("social_security_number"))
     tax_number = _normalize_optional_text(request.form.get("tax_number"))
@@ -522,7 +536,7 @@ def init_routes(app):
             name = _normalize_optional_text(request.form.get("name"))
             address = _normalize_optional_text(request.form.get("address"))
             om_id = _normalize_optional_text(request.form.get("om_id"))
-            tax_number = _normalize_optional_text(request.form.get("tax_number"))
+            tax_number = _normalize_legal_entity_tax_number(request.form.get("tax_number"))
 
             if not name or not address or not tax_number:
                 flash("Name, address, and tax number are required.", "error")
@@ -532,7 +546,7 @@ def init_routes(app):
             if om_error:
                 flash(om_error, "error")
                 return redirect(url_for("manage_legal_entities"))
-            tax_error = _validate_digit_field("Tax number", tax_number, 10)
+            tax_error = _validate_digit_field("Tax number", tax_number, 11)
             if tax_error:
                 flash(tax_error, "error")
                 return redirect(url_for("manage_legal_entities"))
@@ -558,7 +572,12 @@ def init_routes(app):
             if editing_entity is None:
                 flash("Legal entity not found.", "error")
                 return redirect(url_for("manage_legal_entities"))
-        return render_template("manage_legal_entities.html", entities=entities, editing_entity=editing_entity)
+        return render_template(
+            "manage_legal_entities.html",
+            entities=entities,
+            editing_entity=editing_entity,
+            format_legal_entity_tax_number=_format_legal_entity_tax_number,
+        )
 
     @app.route("/places-of-work", methods=["GET", "POST"])
     @privilege_manager_required
