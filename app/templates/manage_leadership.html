@@ -30,7 +30,7 @@
           value="{{ contract.id }}"
           {% if editing_leadership and editing_leadership.contract_id == contract.id %}selected{% endif %}
         >
-          #{{ contract.id }} · {{ contract.user.username }} · {{ contract.employer.name }}
+          {{ contract.user.profile.full_name if contract.user.profile and contract.user.profile.full_name else contract.user.username }} · {{ contract.start_date }} · {{ contract.employer.name }}
         </option>
         {% endfor %}
       </select>
@@ -84,7 +84,7 @@
           {% for leadership in leadership_positions %}
           <tr>
             <td>{{ leadership.legal_entity.name }}</td>
-            <td>#{{ leadership.contract.id }} · {{ leadership.contract.user.username }}</td>
+            <td>{{ leadership.contract.user.profile.full_name if leadership.contract.user.profile and leadership.contract.user.profile.full_name else leadership.contract.user.username }} · {{ leadership.contract.start_date }}</td>
             <td>{{ leadership.start_date }}</td>
             <td>{{ leadership.end_date or '—' }}</td>
             <td>
