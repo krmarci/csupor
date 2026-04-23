@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% block title %}Leave limits · CSUPOR Portal{% endblock %}
+{% block content %}
+<section class="dashboard-grid">
+  <section class="form-shell span-12">
+    <div class="section-heading">
+      <div>
+        <h2>Assign leave limits to active contracts</h2>
+        <p>Select employee, contract, and calendar year before entering leave limits.</p>
+      </div>
+    </div>
+
+    <form method="get" class="grid-form">
+      <label for="user_id">Employee *</label>
+      <select id="user_id" name="user_id" required>
+        <option value="">Select employee</option>
+        {% for user in users %}
+        <option value="{{ user.id }}" {% if selected_user and selected_user.id == user.id %}selected{% endif %}>
+          {{ user.profile.full_name if user.profile and user.profile.full_name else user.username }}
+        </option>
+        {% endfor %}
+      </select>
+
+      <label for="contract_id">Contract *</label>
+      <select id="contract_id" name="contract_id" {% if not selected_user %}disabled{% endif %}>
+        <option value="">Select contract</option>
+        {% for contract in contracts %}
+        <option value="{{ contract.id }}" {% if selected_contract and selected_contract.id == contract.id %}selected{% endif %}>
+          {{ contract_display_name(contract) }}
+        </option>
+        {% endfor %}
+      </select>
+      {% if not selected_user %}
+      <small class="help-text">Select an employee first to load available contracts.</small>
+      {% endif %}
+
+      <label for="calendar_year">Calendar year *</label>
+      <input id="calendar_year" name="calendar_year" type="number" min="1970" max="2100" value="{{ selected_year }}" required>
+
+      <div class="button-row">
+        <button type="submit">Load leave categories</button>
+      </div>
+    </form>
+  </section>
+
+  {% if selected_contract %}
+  <section class="table-card span-12">
+    <div class="section-heading">
+      <div>
+        <h2>Leave limits for {{ selected_year }}</h2>
+        <p>
+          Contract: {{ contract_display_name(selected_contract) }}
+          {% if not is_contract_active_in_year(selected_contract, selected_year) %}
+          <strong>· Not active in selected year</strong>
+          {% endif %}
+        </p>
+      </div>
+    </div>
+
+    {% if is_contract_active_in_year(selected_contract, selected_year) %}
+    <form method="post" class="grid-form">
+      <input type="hidden" name="user_id" value="{{ selected_user.id }}">
+      <input type="hidden" name="contract_id" value="{{ selected_contract.id }}">
+      <input type="hidden" name="calendar_year" value="{{ selected_year }}">
+
+      <h3>Calendar year bounded categories</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Leave category</th>
+              <th>Limit (days)</th>
+              <th>Bounded period</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for leave_type in calendar_year_bounded_leave_types %}
+              {% if leave_type_available_for_contract(leave_type, selected_contract.contract_type) %}
+              {% set existing = existing_limits.get(leave_type) %}
+              <tr>
+                <td>{{ leave_type.value|capitalize }}</td>
+                <td>
+                  <input
+                    type="number"
+                    min="0"
+                    name="limit_days_{{ leave_type.name }}"
+                    value="{{ existing.limit_days if existing else '' }}"
+                  >
+                </td>
+                <td>{{ selected_year }}-01-01 → {{ selected_year }}-12-31</td>
+              </tr>
+              {% endif %}
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Categories with custom start/end date</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Leave category</th>
+              <th>Limit (days)</th>
+              <th>Start date</th>
+              <th>End date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for leave_type in range_based_leave_types %}
+              {% if leave_type_available_for_contract(leave_type, selected_contract.contract_type) %}
+              {% set existing = existing_limits.get(leave_type) %}
+              <tr>
+                <td>{{ leave_type.value|capitalize }}</td>
+                <td>
+                  <input
+                    type="number"
+                    min="0"
+                    name="limit_days_{{ leave_type.name }}"
+                    value="{{ existing.limit_days if existing else '' }}"
+                  >
+                </td>
+                <td>
+                  <input
+                    type="date"
+                    name="period_start_{{ leave_type.name }}"
+                    value="{{ existing.period_start if existing and existing.period_start else '' }}"
+                  >
+                </td>
+                <td>
+                  <input
+                    type="date"
+                    name="period_end_{{ leave_type.name }}"
+                    value="{{ existing.period_end if existing and existing.period_end else '' }}"
+                  >
+                </td>
+              </tr>
+              {% endif %}
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Categories without assigned limit</h3>
+      <ul>
+        {% for leave_name in leave_types_without_limit %}
+        <li>{{ leave_name|capitalize }}</li>
+        {% endfor %}
+      </ul>
+
+      <div class="button-row">
+        <button type="submit">Save leave limits</button>
+      </div>
+    </form>
+    {% else %}
+    <div class="empty-state">
+      The selected contract is not active in {{ selected_year }}. Choose an active contract-year combination to assign limits.
+    </div>
+    {% endif %}
+  </section>
+  {% endif %}
+</section>
+{% endblock %}
