@@ -761,16 +761,24 @@ def init_routes(app):
         selected_year = request.values.get("calendar_year", type=int) or date.today().year
 
         users = User.query.order_by(User.username.asc()).all()
-        selected_user = db.session.get(User, selected_user_id) if selected_user_id else None
-        contracts = []
-        selected_contract = None
+        all_contracts = (
+            Contract.query.join(User)
+            .order_by(User.username.asc(), Contract.start_date.desc(), Contract.id.desc())
+            .all()
+        )
 
-        if selected_user:
-            contracts = sorted(selected_user.contracts, key=lambda contract: contract.start_date, reverse=True)
-            if selected_contract_id:
-                selected_contract = next((contract for contract in contracts if contract.id == selected_contract_id), None)
-                if selected_contract is None:
-                    flash("Selected contract does not belong to the selected employee.", "error")
+        selected_user = db.session.get(User, selected_user_id) if selected_user_id else None
+        selected_contract = None
+        if selected_contract_id:
+            selected_contract = next((contract for contract in all_contracts if contract.id == selected_contract_id), None)
+            if selected_contract is None:
+                flash("Selected contract does not exist.", "error")
+            elif selected_user and selected_contract.user_id != selected_user.id:
+                flash("Selected contract does not belong to the selected employee.", "error")
+                selected_contract = None
+            elif selected_user is None:
+                selected_user = selected_contract.user
+                selected_user_id = selected_user.id
 
         if request.method == "POST":
             if selected_user is None:
@@ -911,7 +919,7 @@ def init_routes(app):
         return render_template(
             "manage_leave_limits.html",
             users=users,
-            contracts=contracts,
+            all_contracts=all_contracts,
             selected_user=selected_user,
             selected_contract=selected_contract,
             selected_year=selected_year,
