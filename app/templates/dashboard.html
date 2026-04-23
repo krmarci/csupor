@@ -247,6 +247,18 @@
     </section>
     {% endif %}
 
+    {% if can_manage_leave_limits %}
+    <section class="card span-12">
+      <div class="section-heading">
+        <div>
+          <h2>Leave limit management</h2>
+          <p>Assign calendar-year and range-based leave limits to active contracts.</p>
+        </div>
+        <a class="button button-secondary" href="{{ url_for('manage_leave_limits') }}">Open leave limit manager</a>
+      </div>
+    </section>
+    {% endif %}
+
     <section class="card span-12">
       <div class="section-heading">
         <div>
