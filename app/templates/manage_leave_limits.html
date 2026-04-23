@@ -24,8 +24,12 @@
       <label for="contract_id">Contract *</label>
       <select id="contract_id" name="contract_id" {% if not selected_user %}disabled{% endif %}>
         <option value="">Select contract</option>
-        {% for contract in contracts %}
-        <option value="{{ contract.id }}" {% if selected_contract and selected_contract.id == contract.id %}selected{% endif %}>
+        {% for contract in all_contracts %}
+        <option
+          value="{{ contract.id }}"
+          data-user-id="{{ contract.user_id }}"
+          {% if selected_contract and selected_contract.id == contract.id %}selected{% endif %}
+        >
           {{ contract_display_name(contract) }}
         </option>
         {% endfor %}
@@ -160,4 +164,53 @@
   </section>
   {% endif %}
 </section>
+<script>
+  (() => {
+    const employeeSelect = document.getElementById("user_id");
+    const contractSelect = document.getElementById("contract_id");
+    if (!employeeSelect || !contractSelect) {
+      return;
+    }
+
+    const contractOptions = Array.from(contractSelect.options).filter((option) => option.value);
+
+    const syncContractsFromEmployee = () => {
+      const selectedEmployeeId = employeeSelect.value;
+      contractOptions.forEach((option) => {
+        const matchesEmployee = !selectedEmployeeId || option.dataset.userId === selectedEmployeeId;
+        option.hidden = !matchesEmployee;
+        option.disabled = !matchesEmployee;
+      });
+      contractSelect.disabled = !selectedEmployeeId;
+
+      if (contractSelect.value) {
+        const selectedContract = contractSelect.options[contractSelect.selectedIndex];
+        if (!selectedContract || selectedContract.disabled) {
+          contractSelect.value = "";
+        }
+      }
+    };
+
+    const syncEmployeeFromContract = () => {
+      const selectedContract = contractSelect.options[contractSelect.selectedIndex];
+      const selectedEmployeeFromContract =
+        selectedContract && selectedContract.value ? selectedContract.dataset.userId : "";
+      if (selectedEmployeeFromContract && employeeSelect.value !== selectedEmployeeFromContract) {
+        employeeSelect.value = selectedEmployeeFromContract;
+      }
+    };
+
+    employeeSelect.addEventListener("change", () => {
+      syncContractsFromEmployee();
+    });
+
+    contractSelect.addEventListener("change", () => {
+      syncEmployeeFromContract();
+      syncContractsFromEmployee();
+    });
+
+    syncEmployeeFromContract();
+    syncContractsFromEmployee();
+  })();
+</script>
 {% endblock %}
