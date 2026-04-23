@@ -22,7 +22,7 @@
       </select>
 
       <label for="contract_id">Contract *</label>
-      <select id="contract_id" name="contract_id" required>
+      <select id="contract_id" name="contract_id" {% if not selected_user %}disabled{% endif %}>
         <option value="">Select contract</option>
         {% for contract in contracts %}
         <option value="{{ contract.id }}" {% if selected_contract and selected_contract.id == contract.id %}selected{% endif %}>
@@ -30,6 +30,9 @@
         </option>
         {% endfor %}
       </select>
+      {% if not selected_user %}
+      <small class="help-text">Select an employee first to load available contracts.</small>
+      {% endif %}
 
       <label for="calendar_year">Calendar year *</label>
       <input id="calendar_year" name="calendar_year" type="number" min="1970" max="2100" value="{{ selected_year }}" required>
