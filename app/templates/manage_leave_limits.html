@@ -48,7 +48,7 @@
   </section>
 
   {% if selected_contract %}
-  <section class="table-card span-12">
+  <section class="table-card span-12 leave-limits-card">
     <div class="section-heading">
       <div>
         <h2>Leave limits for {{ selected_year }}</h2>
@@ -69,20 +69,20 @@
 
       <h3>Calendar year bounded categories</h3>
       <div class="table-wrap">
-        <table>
+        <table class="leave-limits-table leave-limits-table-calendar">
           <thead>
             <tr>
-              <th>Leave category</th>
+              <th class="leave-category-column">Leave category</th>
               <th>Limit (days)</th>
               <th>Bounded period</th>
             </tr>
           </thead>
           <tbody>
             {% for leave_type in calendar_year_bounded_leave_types %}
-              {% if leave_type_available_for_contract(leave_type, selected_contract.contract_type) %}
+              {% if leave_type_available_for_contract(leave_type, selected_contract.contract_type, selected_contract.user) %}
               {% set existing = existing_limits.get(leave_type) %}
               <tr>
-                <td>{{ leave_type.value|capitalize }}</td>
+                <td class="leave-category-column">{{ leave_type.value|capitalize }}</td>
                 <td>
                   <input
                     type="number"
@@ -100,45 +100,65 @@
       </div>
 
       <h3>Categories with custom start/end date</h3>
+      <p class="help-text">Use “Add another” when one employee has multiple eligible instances of the same category in {{ selected_year }}.</p>
       <div class="table-wrap">
-        <table>
+        <table class="leave-limits-table leave-limits-table-range">
           <thead>
             <tr>
-              <th>Leave category</th>
+              <th class="leave-category-column">Leave category</th>
               <th>Limit (days)</th>
               <th>Start date</th>
               <th>End date</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {% for leave_type in range_based_leave_types %}
-              {% if leave_type_available_for_contract(leave_type, selected_contract.contract_type) %}
-              {% set existing = existing_limits.get(leave_type) %}
-              <tr>
-                <td>{{ leave_type.value|capitalize }}</td>
-                <td>
-                  <input
-                    type="number"
-                    min="0"
-                    name="limit_days_{{ leave_type.name }}"
-                    value="{{ existing.limit_days if existing else '' }}"
-                  >
-                </td>
-                <td>
-                  <input
-                    type="date"
-                    name="period_start_{{ leave_type.name }}"
-                    value="{{ existing.period_start if existing and existing.period_start else '' }}"
-                  >
-                </td>
-                <td>
-                  <input
-                    type="date"
-                    name="period_end_{{ leave_type.name }}"
-                    value="{{ existing.period_end if existing and existing.period_end else '' }}"
-                  >
-                </td>
-              </tr>
+              {% if leave_type_available_for_contract(leave_type, selected_contract.contract_type, selected_contract.user) %}
+                {% set existing_records = range_existing_limits.get(leave_type, []) %}
+                {% for existing in existing_records %}
+                <tr data-range-row="{{ leave_type.name }}">
+                  <td class="leave-category-column">
+                    {{ leave_type.value|capitalize }}
+                    <input type="hidden" name="range_leave_type" value="{{ leave_type.name }}">
+                  </td>
+                  <td>
+                    <input type="number" min="0" name="range_limit_days" value="{{ existing.limit_days }}">
+                  </td>
+                  <td>
+                    <input type="date" name="range_period_start" value="{{ existing.period_start if existing.period_start else '' }}">
+                  </td>
+                  <td>
+                    <input type="date" name="range_period_end" value="{{ existing.period_end if existing.period_end else '' }}">
+                  </td>
+                  <td>
+                    <button type="button" class="button-secondary remove-range-row">Remove</button>
+                  </td>
+                </tr>
+                {% endfor %}
+                <tr data-range-row="{{ leave_type.name }}">
+                  <td class="leave-category-column">
+                    {{ leave_type.value|capitalize }}
+                    <input type="hidden" name="range_leave_type" value="{{ leave_type.name }}">
+                  </td>
+                  <td>
+                    <input type="number" min="0" name="range_limit_days" value="">
+                  </td>
+                  <td>
+                    <input type="date" name="range_period_start" value="">
+                  </td>
+                  <td>
+                    <input type="date" name="range_period_end" value="">
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      class="button-secondary add-range-row"
+                      data-leave-type-name="{{ leave_type.name }}"
+                      data-leave-type-label="{{ leave_type.value|capitalize }}"
+                    >Add another</button>
+                  </td>
+                </tr>
               {% endif %}
             {% endfor %}
           </tbody>
@@ -164,6 +184,39 @@
   </section>
   {% endif %}
 </section>
+<style>
+  .leave-limits-table {
+    table-layout: fixed;
+  }
+
+  .leave-limits-table .leave-category-column {
+    width: 24%;
+  }
+
+  .leave-limits-table-calendar th:nth-child(2),
+  .leave-limits-table-calendar td:nth-child(2) {
+    width: 38%;
+  }
+
+  .leave-limits-table-calendar th:nth-child(3),
+  .leave-limits-table-calendar td:nth-child(3) {
+    width: 38%;
+  }
+
+  .leave-limits-table-range th:nth-child(2),
+  .leave-limits-table-range td:nth-child(2),
+  .leave-limits-table-range th:nth-child(3),
+  .leave-limits-table-range td:nth-child(3),
+  .leave-limits-table-range th:nth-child(4),
+  .leave-limits-table-range td:nth-child(4) {
+    width: 21%;
+  }
+
+  .leave-limits-table-range th:nth-child(5),
+  .leave-limits-table-range td:nth-child(5) {
+    width: 13%;
+  }
+</style>
 <script>
   (() => {
     const employeeSelect = document.getElementById("user_id");
@@ -211,6 +264,43 @@
 
     syncEmployeeFromContract();
     syncContractsFromEmployee();
+  })();
+
+  (() => {
+    const rangeTableBody = document.querySelector(".leave-limits-table-range tbody");
+    if (!rangeTableBody) {
+      return;
+    }
+
+    const createRangeRow = (leaveTypeName, leaveTypeLabel) => {
+      const row = document.createElement("tr");
+      row.dataset.rangeRow = leaveTypeName;
+      row.innerHTML = `
+        <td class="leave-category-column">
+          ${leaveTypeLabel}
+          <input type="hidden" name="range_leave_type" value="${leaveTypeName}">
+        </td>
+        <td><input type="number" min="0" name="range_limit_days" value=""></td>
+        <td><input type="date" name="range_period_start" value=""></td>
+        <td><input type="date" name="range_period_end" value=""></td>
+        <td><button type="button" class="button-secondary remove-range-row">Remove</button></td>
+      `;
+      return row;
+    };
+
+    rangeTableBody.addEventListener("click", (event) => {
+      const addButton = event.target.closest(".add-range-row");
+      if (addButton) {
+        const newRow = createRangeRow(addButton.dataset.leaveTypeName, addButton.dataset.leaveTypeLabel);
+        addButton.closest("tr").before(newRow);
+        return;
+      }
+
+      const removeButton = event.target.closest(".remove-range-row");
+      if (removeButton) {
+        removeButton.closest("tr").remove();
+      }
+    });
   })();
 </script>
 {% endblock %}

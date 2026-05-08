@@ -245,7 +245,7 @@ CREATE TABLE IF NOT EXISTS contract_leave_limits (
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
-  UNIQUE KEY uq_leave_limit_scope (contract_id, calendar_year, leave_type),
+  KEY idx_contract_leave_limits_scope (contract_id, calendar_year, leave_type),
   KEY idx_contract_leave_limits_contract (contract_id),
   CONSTRAINT fk_contract_leave_limits_contract_id
     FOREIGN KEY (contract_id) REFERENCES contracts(id)
