@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from functools import wraps
 
 from flask import abort, flash, redirect, render_template, request, url_for
@@ -7,6 +7,7 @@ from flask_login import current_user, login_required, login_user, logout_user
 from . import db
 from .models import (
     Contract,
+    ContractLeaveLimit,
     ContractType,
     Dependent,
     DependentType,
@@ -15,6 +16,7 @@ from .models import (
     Leadership,
     LeadershipPosition,
     LegalEntity,
+    LeaveType,
     PlaceOfWork,
     ProfessionalExam,
     MaritalStatus,
@@ -45,6 +47,38 @@ PROFILE_COMPLETION_FIELDS = (
     "bank_account_number",
     "marital_status",
 )
+
+
+TEACHERS_STATUS_ACT_CONTRACT_TYPES = {
+    ContractType.teacher,
+    ContractType.teaching_assistant,
+    ContractType.nursery_assistant,
+    ContractType.secretary,
+}
+
+CALENDAR_YEAR_BOUNDED_LEAVE_TYPES = [
+    LeaveType.basic_leave,
+    LeaveType.supplementary_leave_based_on_age,
+    LeaveType.supplementary_leave_for_children,
+    LeaveType.supplementary_leave_for_children_with_disability,
+    LeaveType.supplementary_leave_for_young_employees,
+    LeaveType.supplementary_leave_for_reduced_working_capacity,
+    LeaveType.sick_leave,
+    LeaveType.leave_carried_over_from_previous_year,
+]
+
+RANGE_BASED_LEAVE_TYPES = [
+    LeaveType.maternity_leave,
+    LeaveType.paternity_leave,
+    LeaveType.parental_leave,
+    LeaveType.childcare_fee,
+    LeaveType.childcare_allowance,
+    LeaveType.supplementary_leave_for_birth_of_grandchild,
+    LeaveType.supplementary_leave_for_first_marriage,
+    LeaveType.exemption_from_obligation_to_work,
+]
+
+LEAVE_TYPES_WITHOUT_LIMIT = ["unpaid leave", "sickness benefit", "childcare sickness benefit"]
 
 
 def _profile_completion_percentage(profile: UserProfile | None) -> int:
@@ -242,6 +276,28 @@ def _save_leadership_from_form(leadership: Leadership) -> list[str]:
 
     return errors
 
+
+def _contract_display_name(contract: Contract) -> str:
+    display_name = contract.user.profile.full_name if contract.user.profile and contract.user.profile.full_name else contract.user.username
+    return f"{display_name} · {contract.contract_type.value} · {contract.start_date} → {contract.end_date or 'ongoing'}"
+
+
+def _is_contract_active_in_year(contract: Contract, calendar_year: int) -> bool:
+    first_day = date(calendar_year, 1, 1)
+    last_day = date(calendar_year, 12, 31)
+    return contract.start_date <= last_day and (contract.end_date is None or contract.end_date >= first_day)
+
+
+def _leave_type_available_for_contract(leave_type: LeaveType, contract_type: ContractType) -> bool:
+    if leave_type == LeaveType.supplementary_leave_based_on_age:
+        return contract_type == ContractType.employee_under_the_labour_code
+    if leave_type in {
+        LeaveType.supplementary_leave_for_birth_of_grandchild,
+        LeaveType.supplementary_leave_for_first_marriage,
+    }:
+        return contract_type in TEACHERS_STATUS_ACT_CONTRACT_TYPES
+    return True
+
 def _can_manage_privileges(user: User) -> bool:
     return user.is_authenticated and user.privilege in {UserPrivilege.hr, UserPrivilege.ceo}
 
@@ -347,6 +403,7 @@ def init_routes(app):
             can_assign_privileges=_can_assign_privileges(current_user),
             can_manage_user_profiles=_can_manage_privileges(current_user),
             can_manage_leadership=_can_manage_privileges(current_user),
+            can_manage_leave_limits=_can_manage_privileges(current_user),
             profile_status_label=_profile_status_label(current_user.profile),
         )
 
@@ -694,6 +751,185 @@ def init_routes(app):
             places_of_work=places,
             place_label_fn=_contract_place_label,
             mode="edit",
+        )
+
+    @app.route("/leave-limits", methods=["GET", "POST"])
+    @privilege_manager_required
+    def manage_leave_limits():
+        selected_user_id = request.values.get("user_id", type=int)
+        selected_contract_id = request.values.get("contract_id", type=int)
+        selected_year = request.values.get("calendar_year", type=int) or date.today().year
+
+        users = User.query.order_by(User.username.asc()).all()
+        all_contracts = (
+            Contract.query.join(User)
+            .order_by(User.username.asc(), Contract.start_date.desc(), Contract.id.desc())
+            .all()
+        )
+
+        selected_user = db.session.get(User, selected_user_id) if selected_user_id else None
+        selected_contract = None
+        if selected_contract_id:
+            selected_contract = next((contract for contract in all_contracts if contract.id == selected_contract_id), None)
+            if selected_contract is None:
+                flash("Selected contract does not exist.", "error")
+            elif selected_user and selected_contract.user_id != selected_user.id:
+                flash("Selected contract does not belong to the selected employee.", "error")
+                selected_contract = None
+            elif selected_user is None:
+                selected_user = selected_contract.user
+                selected_user_id = selected_user.id
+
+        if request.method == "POST":
+            if selected_user is None:
+                flash("Please select an employee first.", "error")
+                return redirect(url_for("manage_leave_limits"))
+            if selected_contract is None:
+                flash("Please select a valid contract.", "error")
+                return redirect(url_for("manage_leave_limits", user_id=selected_user_id, calendar_year=selected_year))
+            if selected_year < 1970 or selected_year > 2100:
+                flash("Please provide a valid calendar year.", "error")
+                return redirect(
+                    url_for(
+                        "manage_leave_limits",
+                        user_id=selected_user_id,
+                        contract_id=selected_contract_id,
+                        calendar_year=selected_year,
+                    )
+                )
+            if not _is_contract_active_in_year(selected_contract, selected_year):
+                flash("The selected contract is not active in the selected calendar year.", "error")
+                return redirect(
+                    url_for(
+                        "manage_leave_limits",
+                        user_id=selected_user_id,
+                        contract_id=selected_contract_id,
+                        calendar_year=selected_year,
+                    )
+                )
+
+            first_day = date(selected_year, 1, 1)
+            last_day = date(selected_year, 12, 31)
+
+            for leave_type in CALENDAR_YEAR_BOUNDED_LEAVE_TYPES:
+                if not _leave_type_available_for_contract(leave_type, selected_contract.contract_type):
+                    continue
+                limit_days = request.form.get(f"limit_days_{leave_type.name}", type=int)
+                if limit_days is None:
+                    continue
+                if limit_days < 0:
+                    flash(f"{leave_type.value.title()} cannot be negative.", "error")
+                    return redirect(
+                        url_for(
+                            "manage_leave_limits",
+                            user_id=selected_user_id,
+                            contract_id=selected_contract_id,
+                            calendar_year=selected_year,
+                        )
+                    )
+                record = ContractLeaveLimit.query.filter_by(
+                    contract_id=selected_contract.id,
+                    calendar_year=selected_year,
+                    leave_type=leave_type,
+                ).first()
+                if record is None:
+                    record = ContractLeaveLimit(
+                        contract_id=selected_contract.id,
+                        calendar_year=selected_year,
+                        leave_type=leave_type,
+                    )
+                record.limit_days = limit_days
+                record.period_start = first_day
+                record.period_end = last_day
+                db.session.add(record)
+
+            for leave_type in RANGE_BASED_LEAVE_TYPES:
+                if not _leave_type_available_for_contract(leave_type, selected_contract.contract_type):
+                    continue
+                limit_days = request.form.get(f"limit_days_{leave_type.name}", type=int)
+                start_value = parse_iso_date(request.form.get(f"period_start_{leave_type.name}"))
+                end_value = parse_iso_date(request.form.get(f"period_end_{leave_type.name}"))
+                if limit_days is None and start_value is None and end_value is None:
+                    continue
+                if limit_days is None or start_value is None or end_value is None:
+                    flash(f"{leave_type.value.title()} must include limit, start date, and end date.", "error")
+                    return redirect(
+                        url_for(
+                            "manage_leave_limits",
+                            user_id=selected_user_id,
+                            contract_id=selected_contract_id,
+                            calendar_year=selected_year,
+                        )
+                    )
+                if limit_days < 0:
+                    flash(f"{leave_type.value.title()} cannot be negative.", "error")
+                    return redirect(
+                        url_for(
+                            "manage_leave_limits",
+                            user_id=selected_user_id,
+                            contract_id=selected_contract_id,
+                            calendar_year=selected_year,
+                        )
+                    )
+                if end_value < start_value:
+                    flash(f"{leave_type.value.title()} end date cannot be earlier than start date.", "error")
+                    return redirect(
+                        url_for(
+                            "manage_leave_limits",
+                            user_id=selected_user_id,
+                            contract_id=selected_contract_id,
+                            calendar_year=selected_year,
+                        )
+                    )
+                record = ContractLeaveLimit.query.filter_by(
+                    contract_id=selected_contract.id,
+                    calendar_year=selected_year,
+                    leave_type=leave_type,
+                ).first()
+                if record is None:
+                    record = ContractLeaveLimit(
+                        contract_id=selected_contract.id,
+                        calendar_year=selected_year,
+                        leave_type=leave_type,
+                    )
+                record.limit_days = limit_days
+                record.period_start = start_value
+                record.period_end = end_value
+                db.session.add(record)
+
+            db.session.commit()
+            flash("Leave limits saved for the selected contract and year.", "success")
+            return redirect(
+                url_for(
+                    "manage_leave_limits",
+                    user_id=selected_user_id,
+                    contract_id=selected_contract_id,
+                    calendar_year=selected_year,
+                )
+            )
+
+        existing_limits = {}
+        if selected_contract is not None:
+            existing_records = ContractLeaveLimit.query.filter_by(
+                contract_id=selected_contract.id,
+                calendar_year=selected_year,
+            ).all()
+            existing_limits = {record.leave_type: record for record in existing_records}
+
+        return render_template(
+            "manage_leave_limits.html",
+            users=users,
+            all_contracts=all_contracts,
+            selected_user=selected_user,
+            selected_contract=selected_contract,
+            selected_year=selected_year,
+            existing_limits=existing_limits,
+            calendar_year_bounded_leave_types=CALENDAR_YEAR_BOUNDED_LEAVE_TYPES,
+            range_based_leave_types=RANGE_BASED_LEAVE_TYPES,
+            leave_types_without_limit=LEAVE_TYPES_WITHOUT_LIMIT,
+            is_contract_active_in_year=_is_contract_active_in_year,
+            leave_type_available_for_contract=_leave_type_available_for_contract,
+            contract_display_name=_contract_display_name,
         )
 
     @app.route("/leadership", methods=["GET", "POST"])

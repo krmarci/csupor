@@ -34,6 +34,27 @@ class ContractType(enum.Enum):
     employee_under_the_labour_code = "Employee under the Labour Code"
 
 
+class LeaveType(enum.Enum):
+    basic_leave = "basic leave"
+    supplementary_leave_based_on_age = "supplementary leave based on age"
+    supplementary_leave_for_children = "supplementary leave for children"
+    supplementary_leave_for_children_with_disability = "supplementary leave for children with disability"
+    supplementary_leave_for_young_employees = "supplementary leave for young employees"
+    supplementary_leave_for_reduced_working_capacity = (
+        "supplementary leave for employees with reduced working capacity / eligible for disability benefits"
+    )
+    sick_leave = "sick leave"
+    leave_carried_over_from_previous_year = "leave carried over from previous year"
+    maternity_leave = "maternity leave"
+    paternity_leave = "paternity leave"
+    parental_leave = "parental leave"
+    childcare_fee = "childcare fee"
+    childcare_allowance = "childcare allowance"
+    supplementary_leave_for_birth_of_grandchild = "supplementary leave for the birth of a grandchild"
+    supplementary_leave_for_first_marriage = "supplementary leave for first marriage"
+    exemption_from_obligation_to_work = "exemption from obligation to work"
+
+
 class MaritalStatus(enum.Enum):
     single = "single"
     married = "married"
@@ -215,6 +236,22 @@ class Contract(db.Model):
     employer = db.relationship("LegalEntity", back_populates="contracts")
     place_of_work = db.relationship("PlaceOfWork", back_populates="contracts")
     leadership_positions = db.relationship("Leadership", back_populates="contract", cascade="all, delete-orphan")
+    leave_limits = db.relationship("ContractLeaveLimit", back_populates="contract", cascade="all, delete-orphan")
+
+
+class ContractLeaveLimit(db.Model):
+    __tablename__ = "contract_leave_limits"
+    __table_args__ = (db.UniqueConstraint("contract_id", "calendar_year", "leave_type", name="uq_leave_limit_scope"),)
+
+    id = db.Column(db.Integer, primary_key=True)
+    contract_id = db.Column(db.Integer, db.ForeignKey("contracts.id"), nullable=False)
+    calendar_year = db.Column(db.Integer, nullable=False)
+    leave_type = db.Column(db.Enum(LeaveType, values_callable=_enum_values), nullable=False)
+    limit_days = db.Column(db.Integer, nullable=False)
+    period_start = db.Column(db.Date, nullable=True)
+    period_end = db.Column(db.Date, nullable=True)
+
+    contract = db.relationship("Contract", back_populates="leave_limits")
 
 
 class Leadership(db.Model):
