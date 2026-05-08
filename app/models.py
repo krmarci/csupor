@@ -241,8 +241,6 @@ class Contract(db.Model):
 
 class ContractLeaveLimit(db.Model):
     __tablename__ = "contract_leave_limits"
-    __table_args__ = (db.UniqueConstraint("contract_id", "calendar_year", "leave_type", name="uq_leave_limit_scope"),)
-
     id = db.Column(db.Integer, primary_key=True)
     contract_id = db.Column(db.Integer, db.ForeignKey("contracts.id"), nullable=False)
     calendar_year = db.Column(db.Integer, nullable=False)
