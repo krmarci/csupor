@@ -288,7 +288,15 @@ def _is_contract_active_in_year(contract: Contract, calendar_year: int) -> bool:
     return contract.start_date <= last_day and (contract.end_date is None or contract.end_date >= first_day)
 
 
-def _leave_type_available_for_contract(leave_type: LeaveType, contract_type: ContractType) -> bool:
+def _leave_type_available_for_contract(
+    leave_type: LeaveType,
+    contract_type: ContractType,
+    user: User | None = None,
+) -> bool:
+    if leave_type == LeaveType.maternity_leave:
+        return bool(user and user.profile and user.profile.gender == Gender.female)
+    if leave_type == LeaveType.paternity_leave:
+        return bool(user and user.profile and user.profile.gender == Gender.male)
     if leave_type == LeaveType.supplementary_leave_based_on_age:
         return contract_type == ContractType.employee_under_the_labour_code
     if leave_type in {
@@ -297,6 +305,7 @@ def _leave_type_available_for_contract(leave_type: LeaveType, contract_type: Con
     }:
         return contract_type in TEACHERS_STATUS_ACT_CONTRACT_TYPES
     return True
+
 
 def _can_manage_privileges(user: User) -> bool:
     return user.is_authenticated and user.privilege in {UserPrivilege.hr, UserPrivilege.ceo}
@@ -812,7 +821,11 @@ def init_routes(app):
             last_day = date(selected_year, 12, 31)
 
             for leave_type in CALENDAR_YEAR_BOUNDED_LEAVE_TYPES:
-                if not _leave_type_available_for_contract(leave_type, selected_contract.contract_type):
+                if not _leave_type_available_for_contract(
+                    leave_type,
+                    selected_contract.contract_type,
+                    selected_contract.user,
+                ):
                     continue
                 limit_days = request.form.get(f"limit_days_{leave_type.name}", type=int)
                 if limit_days is None:
@@ -843,16 +856,62 @@ def init_routes(app):
                 record.period_end = last_day
                 db.session.add(record)
 
-            for leave_type in RANGE_BASED_LEAVE_TYPES:
-                if not _leave_type_available_for_contract(leave_type, selected_contract.contract_type):
+            available_range_leave_types = {
+                leave_type
+                for leave_type in RANGE_BASED_LEAVE_TYPES
+                if _leave_type_available_for_contract(
+                    leave_type,
+                    selected_contract.contract_type,
+                    selected_contract.user,
+                )
+            }
+            range_leave_type_names = request.form.getlist("range_leave_type")
+            range_limit_day_values = request.form.getlist("range_limit_days")
+            range_start_values = request.form.getlist("range_period_start")
+            range_end_values = request.form.getlist("range_period_end")
+            new_range_records = []
+
+            for index, leave_type_name in enumerate(range_leave_type_names):
+                try:
+                    leave_type = LeaveType[leave_type_name]
+                except KeyError:
+                    flash("Invalid custom leave category submitted.", "error")
+                    return redirect(
+                        url_for(
+                            "manage_leave_limits",
+                            user_id=selected_user_id,
+                            contract_id=selected_contract_id,
+                            calendar_year=selected_year,
+                        )
+                    )
+                if leave_type not in available_range_leave_types:
                     continue
-                limit_days = request.form.get(f"limit_days_{leave_type.name}", type=int)
-                start_value = parse_iso_date(request.form.get(f"period_start_{leave_type.name}"))
-                end_value = parse_iso_date(request.form.get(f"period_end_{leave_type.name}"))
-                if limit_days is None and start_value is None and end_value is None:
+
+                limit_days_value = (
+                    range_limit_day_values[index].strip()
+                    if index < len(range_limit_day_values)
+                    else ""
+                )
+                start_raw_value = range_start_values[index] if index < len(range_start_values) else ""
+                end_raw_value = range_end_values[index] if index < len(range_end_values) else ""
+                start_value = parse_iso_date(start_raw_value)
+                end_value = parse_iso_date(end_raw_value)
+                if not limit_days_value and start_value is None and end_value is None:
                     continue
-                if limit_days is None or start_value is None or end_value is None:
+                if not limit_days_value or start_value is None or end_value is None:
                     flash(f"{leave_type.value.title()} must include limit, start date, and end date.", "error")
+                    return redirect(
+                        url_for(
+                            "manage_leave_limits",
+                            user_id=selected_user_id,
+                            contract_id=selected_contract_id,
+                            calendar_year=selected_year,
+                        )
+                    )
+                try:
+                    limit_days = int(limit_days_value)
+                except ValueError:
+                    flash(f"{leave_type.value.title()} limit must be a whole number.", "error")
                     return redirect(
                         url_for(
                             "manage_leave_limits",
@@ -881,21 +940,25 @@ def init_routes(app):
                             calendar_year=selected_year,
                         )
                     )
-                record = ContractLeaveLimit.query.filter_by(
-                    contract_id=selected_contract.id,
-                    calendar_year=selected_year,
-                    leave_type=leave_type,
-                ).first()
-                if record is None:
-                    record = ContractLeaveLimit(
+                new_range_records.append(
+                    ContractLeaveLimit(
                         contract_id=selected_contract.id,
                         calendar_year=selected_year,
                         leave_type=leave_type,
+                        limit_days=limit_days,
+                        period_start=start_value,
+                        period_end=end_value,
                     )
-                record.limit_days = limit_days
-                record.period_start = start_value
-                record.period_end = end_value
-                db.session.add(record)
+                )
+
+            if available_range_leave_types:
+                ContractLeaveLimit.query.filter(
+                    ContractLeaveLimit.contract_id == selected_contract.id,
+                    ContractLeaveLimit.calendar_year == selected_year,
+                    ContractLeaveLimit.leave_type.in_(list(available_range_leave_types)),
+                ).delete(synchronize_session=False)
+                for record in new_range_records:
+                    db.session.add(record)
 
             db.session.commit()
             flash("Leave limits saved for the selected contract and year.", "success")
@@ -909,12 +972,25 @@ def init_routes(app):
             )
 
         existing_limits = {}
+        range_existing_limits = {leave_type: [] for leave_type in RANGE_BASED_LEAVE_TYPES}
         if selected_contract is not None:
-            existing_records = ContractLeaveLimit.query.filter_by(
-                contract_id=selected_contract.id,
-                calendar_year=selected_year,
-            ).all()
-            existing_limits = {record.leave_type: record for record in existing_records}
+            existing_records = (
+                ContractLeaveLimit.query.filter_by(
+                    contract_id=selected_contract.id,
+                    calendar_year=selected_year,
+                )
+                .order_by(
+                    ContractLeaveLimit.leave_type.asc(),
+                    ContractLeaveLimit.period_start.asc(),
+                    ContractLeaveLimit.id.asc(),
+                )
+                .all()
+            )
+            for record in existing_records:
+                if record.leave_type in RANGE_BASED_LEAVE_TYPES:
+                    range_existing_limits.setdefault(record.leave_type, []).append(record)
+                elif record.leave_type not in existing_limits:
+                    existing_limits[record.leave_type] = record
 
         return render_template(
             "manage_leave_limits.html",
@@ -924,6 +1000,7 @@ def init_routes(app):
             selected_contract=selected_contract,
             selected_year=selected_year,
             existing_limits=existing_limits,
+            range_existing_limits=range_existing_limits,
             calendar_year_bounded_leave_types=CALENDAR_YEAR_BOUNDED_LEAVE_TYPES,
             range_based_leave_types=RANGE_BASED_LEAVE_TYPES,
             leave_types_without_limit=LEAVE_TYPES_WITHOUT_LIMIT,
