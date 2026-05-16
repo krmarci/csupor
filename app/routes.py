@@ -399,9 +399,40 @@ def _month_calendar_days(year: int, month: int) -> list[date | None]:
     return days
 
 
+BLOCKING_LEAVE_REQUEST_STATUSES = (
+    LeaveRequestStatus.pending_approval,
+    LeaveRequestStatus.approved,
+    LeaveRequestStatus.pending_cancellation,
+)
+
+
 def _leave_request_overlaps_day(leave_request: LeaveRequest, day: date) -> bool:
     end_date = leave_request.end_date or leave_request.start_date
     return leave_request.start_date <= day <= end_date
+
+
+def _overlapping_leave_request(
+    user_id: int,
+    contract_id: int,
+    start_date: date,
+    end_date: date | None,
+) -> LeaveRequest | None:
+    request_end_date = end_date or start_date
+    return (
+        LeaveRequest.query.filter(
+            LeaveRequest.user_id == user_id,
+            LeaveRequest.contract_id == contract_id,
+            LeaveRequest.status.in_(BLOCKING_LEAVE_REQUEST_STATUSES),
+            LeaveRequest.start_date <= request_end_date,
+            db.or_(
+                db.and_(LeaveRequest.end_date.is_(None), LeaveRequest.start_date >= start_date),
+                LeaveRequest.end_date >= start_date,
+            ),
+        )
+        .order_by(LeaveRequest.start_date.asc(), LeaveRequest.id.asc())
+        .first()
+    )
+
 
 def _can_manage_privileges(user: User) -> bool:
     return user.is_authenticated and user.privilege in {UserPrivilege.hr, UserPrivilege.ceo}
@@ -576,6 +607,24 @@ def init_routes(app):
                 )
             if end_date is not None and not _is_contract_active_on(selected_contract, end_date):
                 flash("The request end date must fall within the selected active contract.", "error")
+                return redirect(
+                    url_for("leaves", contract_id=selected_contract.id, year=selected_year, month=selected_month)
+                )
+
+            conflicting_request = _overlapping_leave_request(
+                current_user.id,
+                selected_contract.id,
+                start_date,
+                end_date,
+            )
+            if conflicting_request is not None:
+                conflicting_end_date = conflicting_request.end_date or conflicting_request.start_date
+                flash(
+                    "This request overlaps with an existing "
+                    f"{conflicting_request.status.value} leave request "
+                    f"({conflicting_request.start_date} → {conflicting_end_date}).",
+                    "error",
+                )
                 return redirect(
                     url_for("leaves", contract_id=selected_contract.id, year=selected_year, month=selected_month)
                 )
