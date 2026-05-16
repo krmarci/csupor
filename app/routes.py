@@ -16,6 +16,9 @@ from .models import (
     Leadership,
     LeadershipPosition,
     LegalEntity,
+    LeaveRequest,
+    LeaveRequestCategory,
+    LeaveRequestStatus,
     LeaveType,
     PlaceOfWork,
     ProfessionalExam,
@@ -307,6 +310,259 @@ def _leave_type_available_for_contract(
     return True
 
 
+def _is_contract_active_on(contract: Contract, day: date) -> bool:
+    return contract.start_date <= day and (contract.end_date is None or contract.end_date >= day)
+
+
+def _active_contracts_for_user(user: User, day: date | None = None) -> list[Contract]:
+    active_day = day or date.today()
+    return sorted(
+        [contract for contract in user.contracts if _is_contract_active_on(contract, active_day)],
+        key=lambda contract: (contract.start_date, contract.id),
+        reverse=True,
+    )
+
+
+def _current_active_contract(user: User) -> Contract | None:
+    active_contracts = _active_contracts_for_user(user)
+    return active_contracts[0] if active_contracts else None
+
+
+def _has_child_dependents(user: User) -> bool:
+    return any(dependent.dependent_type == DependentType.child for dependent in user.dependents)
+
+
+def _has_positive_leave_limit(contract: Contract, leave_types: set[LeaveType]) -> bool:
+    return any(limit.leave_type in leave_types and limit.limit_days > 0 for limit in contract.leave_limits)
+
+
+def _available_leave_request_categories(user: User, contract: Contract) -> list[dict[str, object]]:
+    categories = [
+        {
+            "category": LeaveRequestCategory.paid_leave,
+            "label": "Paid leave",
+            "description": "Basic leave, supplementary leaves, parental leave, paternity leave, and leave carry-over.",
+            "end_required": True,
+        },
+        {
+            "category": LeaveRequestCategory.health_leave,
+            "label": "Health leave",
+            "description": "Sick leave and sickness benefit.",
+            "end_required": False,
+        },
+    ]
+    if _has_child_dependents(user):
+        categories.append(
+            {
+                "category": LeaveRequestCategory.childcare_sickness_benefit,
+                "label": "Childcare sickness benefit",
+                "description": "Available when a child dependent is recorded on your profile.",
+                "end_required": False,
+            }
+        )
+    childbirth_leave_types = {
+        LeaveType.maternity_leave,
+        LeaveType.childcare_fee,
+        LeaveType.childcare_allowance,
+    }
+    if _has_positive_leave_limit(contract, childbirth_leave_types):
+        categories.append(
+            {
+                "category": LeaveRequestCategory.childbirth_leave,
+                "label": "Childbirth leave",
+                "description": "Maternity leave, childcare fee, and childcare allowance.",
+                "end_required": False,
+            }
+        )
+    categories.append(
+        {
+            "category": LeaveRequestCategory.exemption_from_obligation_to_work,
+            "label": "Exemption from obligation to work",
+            "description": "Request time away under an exemption from work obligation.",
+            "end_required": False,
+        }
+    )
+    return categories
+
+
+def _month_calendar_days(year: int, month: int) -> list[date | None]:
+    first_day = date(year, month, 1)
+    if month == 12:
+        next_month = date(year + 1, 1, 1)
+    else:
+        next_month = date(year, month + 1, 1)
+    day_count = (next_month - first_day).days
+    days: list[date | None] = [None] * first_day.weekday()
+    days.extend(date(year, month, day) for day in range(1, day_count + 1))
+    while len(days) % 7:
+        days.append(None)
+    return days
+
+
+BLOCKING_LEAVE_REQUEST_STATUSES = (
+    LeaveRequestStatus.pending_approval,
+    LeaveRequestStatus.approved,
+    LeaveRequestStatus.pending_cancellation,
+)
+
+
+def _leave_request_overlaps_day(leave_request: LeaveRequest, day: date) -> bool:
+    end_date = leave_request.end_date or leave_request.start_date
+    return leave_request.start_date <= day <= end_date
+
+
+def _leave_request_end_date(leave_request: LeaveRequest) -> date:
+    return leave_request.end_date or leave_request.start_date
+
+
+def _user_display_name(user: User) -> str:
+    return user.profile.full_name if user.profile and user.profile.full_name else user.username
+
+
+def _leadership_active_on(leadership: Leadership, day: date) -> bool:
+    return leadership.start_date <= day and (leadership.end_date is None or leadership.end_date >= day)
+
+
+def _active_leadership_for_user(user: User, day: date | None = None) -> list[Leadership]:
+    active_day = day or date.today()
+    return [
+        leadership
+        for contract in user.contracts
+        for leadership in contract.leadership_positions
+        if _leadership_active_on(leadership, active_day)
+    ]
+
+
+def _active_leadership_for_user_entity(user: User, legal_entity_id: int, day: date | None = None) -> list[Leadership]:
+    active_day = day or date.today()
+    return [
+        leadership
+        for leadership in _active_leadership_for_user(user, active_day)
+        if leadership.legal_entity_id == legal_entity_id
+    ]
+
+
+def _is_active_principal_for_entity(user: User, legal_entity_id: int, day: date | None = None) -> bool:
+    return any(
+        leadership.position == LeadershipPosition.principal
+        for leadership in _active_leadership_for_user_entity(user, legal_entity_id, day)
+    )
+
+
+def _can_manage_leaves(user: User) -> bool:
+    return user.is_authenticated and (
+        user.privilege == UserPrivilege.ceo or bool(_active_leadership_for_user(user))
+    )
+
+
+def _accessible_leave_legal_entity_ids(user: User) -> set[int] | None:
+    if user.privilege == UserPrivilege.ceo:
+        return None
+    return {leadership.legal_entity_id for leadership in _active_leadership_for_user(user)}
+
+
+def _leave_request_query_for_manager(user: User):
+    query = LeaveRequest.query.join(Contract)
+    legal_entity_ids = _accessible_leave_legal_entity_ids(user)
+    if legal_entity_ids is not None:
+        if not legal_entity_ids:
+            return query.filter(db.false())
+        query = query.filter(Contract.legal_entity_id.in_(legal_entity_ids))
+    return query
+
+
+def _can_approve_ceo_part(user: User, leave_request: LeaveRequest) -> bool:
+    return user.privilege == UserPrivilege.ceo
+
+
+def _can_approve_leadership_part(user: User, leave_request: LeaveRequest) -> bool:
+    leadership_records = _active_leadership_for_user_entity(
+        user,
+        leave_request.contract.legal_entity_id,
+    )
+    for leadership in leadership_records:
+        if user.id == leave_request.user_id and leadership.position == LeadershipPosition.deputy_principal:
+            continue
+        return True
+    return False
+
+
+def _apply_automatic_leave_approvals(leave_request: LeaveRequest) -> None:
+    applicant = leave_request.user
+    if applicant.privilege == UserPrivilege.ceo:
+        leave_request.ceo_approved_by_id = applicant.id
+    if _is_active_principal_for_entity(applicant, leave_request.contract.legal_entity_id):
+        leave_request.leadership_approved_by_id = applicant.id
+    if _leave_request_is_fully_approved(leave_request):
+        leave_request.status = LeaveRequestStatus.approved
+
+
+def _leave_request_is_fully_approved(leave_request: LeaveRequest) -> bool:
+    return bool(leave_request.ceo_approved_by_id and leave_request.leadership_approved_by_id)
+
+
+def _approve_leave_request(leave_request: LeaveRequest, approver: User) -> list[str]:
+    approved_parts = []
+    if leave_request.status != LeaveRequestStatus.pending_approval:
+        return approved_parts
+    if leave_request.ceo_approved_by_id is None and _can_approve_ceo_part(approver, leave_request):
+        leave_request.ceo_approved_by_id = approver.id
+        approved_parts.append("CEO")
+    if leave_request.leadership_approved_by_id is None and _can_approve_leadership_part(approver, leave_request):
+        leave_request.leadership_approved_by_id = approver.id
+        approved_parts.append("principal/deputy principal")
+    if _leave_request_is_fully_approved(leave_request):
+        leave_request.status = LeaveRequestStatus.approved
+        leave_request.decided_by_id = approver.id
+    return approved_parts
+
+
+def _pending_leave_requests_for_manager(user: User, limit: int | None = None) -> list[LeaveRequest]:
+    query = (
+        _leave_request_query_for_manager(user)
+        .filter(LeaveRequest.status == LeaveRequestStatus.pending_approval)
+        .order_by(LeaveRequest.start_date.asc(), LeaveRequest.id.asc())
+    )
+    actionable_requests = [
+        leave_request
+        for leave_request in query.all()
+        if (
+            leave_request.ceo_approved_by_id is None
+            and _can_approve_ceo_part(user, leave_request)
+        )
+        or (
+            leave_request.leadership_approved_by_id is None
+            and _can_approve_leadership_part(user, leave_request)
+        )
+    ]
+    if limit:
+        return actionable_requests[:limit]
+    return actionable_requests
+
+
+def _overlapping_leave_request(
+    user_id: int,
+    contract_id: int,
+    start_date: date,
+    end_date: date | None,
+) -> LeaveRequest | None:
+    request_end_date = end_date or start_date
+    return (
+        LeaveRequest.query.filter(
+            LeaveRequest.user_id == user_id,
+            LeaveRequest.contract_id == contract_id,
+            LeaveRequest.status.in_(BLOCKING_LEAVE_REQUEST_STATUSES),
+            LeaveRequest.start_date <= request_end_date,
+            db.or_(
+                db.and_(LeaveRequest.end_date.is_(None), LeaveRequest.start_date >= start_date),
+                LeaveRequest.end_date >= start_date,
+            ),
+        )
+        .order_by(LeaveRequest.start_date.asc(), LeaveRequest.id.asc())
+        .first()
+    )
+
+
 def _can_manage_privileges(user: User) -> bool:
     return user.is_authenticated and user.privilege in {UserPrivilege.hr, UserPrivilege.ceo}
 
@@ -340,6 +596,10 @@ def privilege_assignment_required(view_func):
 
 
 def init_routes(app):
+    @app.context_processor
+    def inject_leave_management_access():
+        return {"can_manage_leaves_global": _can_manage_leaves(current_user)}
+
     @app.route("/")
     def index():
         if current_user.is_authenticated:
@@ -413,7 +673,162 @@ def init_routes(app):
             can_manage_user_profiles=_can_manage_privileges(current_user),
             can_manage_leadership=_can_manage_privileges(current_user),
             can_manage_leave_limits=_can_manage_privileges(current_user),
+            can_manage_leaves=_can_manage_leaves(current_user),
+            pending_leave_requests=_pending_leave_requests_for_manager(current_user, limit=6)
+            if _can_manage_leaves(current_user)
+            else [],
             profile_status_label=_profile_status_label(current_user.profile),
+        )
+
+    @app.route("/leaves", methods=["GET", "POST"])
+    @login_required
+    def leaves():
+        today = date.today()
+        active_contracts = _active_contracts_for_user(current_user, today)
+        selected_contract_id = request.values.get("contract_id", type=int)
+        current_contract = _current_active_contract(current_user)
+        selected_contract = None
+        if selected_contract_id:
+            selected_contract = next(
+                (contract for contract in active_contracts if contract.id == selected_contract_id),
+                None,
+            )
+            if selected_contract is None:
+                flash("Please select one of your active contracts.", "error")
+        if selected_contract is None:
+            selected_contract = current_contract
+
+        selected_year = request.values.get("year", type=int) or today.year
+        selected_month = request.values.get("month", type=int) or today.month
+        if selected_year < 1970 or selected_year > 2100:
+            selected_year = today.year
+        if selected_month < 1 or selected_month > 12:
+            selected_month = today.month
+
+        if request.method == "POST":
+            if selected_contract is None:
+                flash("You need an active contract before applying for leave.", "error")
+                return redirect(url_for("leaves"))
+
+            category_value = request.form.get("category")
+            available_categories = _available_leave_request_categories(current_user, selected_contract)
+            available_by_value = {item["category"].value: item for item in available_categories}
+            category_definition = available_by_value.get(category_value)
+            if category_definition is None:
+                flash("Please choose an available leave type.", "error")
+                return redirect(
+                    url_for("leaves", contract_id=selected_contract.id, year=selected_year, month=selected_month)
+                )
+
+            start_date = parse_iso_date(request.form.get("start_date"))
+            end_date = parse_iso_date(request.form.get("end_date"))
+            if start_date is None:
+                flash("Start date is required.", "error")
+                return redirect(
+                    url_for("leaves", contract_id=selected_contract.id, year=selected_year, month=selected_month)
+                )
+            if category_definition["end_required"] and end_date is None:
+                flash("Paid leave requests require both start and end date.", "error")
+                return redirect(
+                    url_for("leaves", contract_id=selected_contract.id, year=selected_year, month=selected_month)
+                )
+            if end_date is not None and end_date < start_date:
+                flash("End date cannot be earlier than the start date.", "error")
+                return redirect(
+                    url_for("leaves", contract_id=selected_contract.id, year=selected_year, month=selected_month)
+                )
+            if not _is_contract_active_on(selected_contract, start_date):
+                flash("The request start date must fall within the selected active contract.", "error")
+                return redirect(
+                    url_for("leaves", contract_id=selected_contract.id, year=selected_year, month=selected_month)
+                )
+            if end_date is not None and not _is_contract_active_on(selected_contract, end_date):
+                flash("The request end date must fall within the selected active contract.", "error")
+                return redirect(
+                    url_for("leaves", contract_id=selected_contract.id, year=selected_year, month=selected_month)
+                )
+
+            conflicting_request = _overlapping_leave_request(
+                current_user.id,
+                selected_contract.id,
+                start_date,
+                end_date,
+            )
+            if conflicting_request is not None:
+                conflicting_end_date = conflicting_request.end_date or conflicting_request.start_date
+                flash(
+                    "This request overlaps with an existing "
+                    f"{conflicting_request.status.value} leave request "
+                    f"({conflicting_request.start_date} → {conflicting_end_date}).",
+                    "error",
+                )
+                return redirect(
+                    url_for("leaves", contract_id=selected_contract.id, year=selected_year, month=selected_month)
+                )
+
+            leave_request = LeaveRequest(
+                user_id=current_user.id,
+                contract_id=selected_contract.id,
+                category=LeaveRequestCategory(category_value),
+                start_date=start_date,
+                end_date=end_date,
+                status=LeaveRequestStatus.pending_approval,
+                note=_normalize_optional_text(request.form.get("note")),
+            )
+            db.session.add(leave_request)
+            db.session.flush()
+            _apply_automatic_leave_approvals(leave_request)
+            db.session.commit()
+            if leave_request.status == LeaveRequestStatus.approved:
+                flash("Leave request submitted and automatically approved.", "success")
+            else:
+                flash("Leave request submitted and marked as pending approval.", "success")
+            return redirect(
+                url_for("leaves", contract_id=selected_contract.id, year=start_date.year, month=start_date.month)
+            )
+
+        available_categories = (
+            _available_leave_request_categories(current_user, selected_contract) if selected_contract else []
+        )
+        month_start = date(selected_year, selected_month, 1)
+        if selected_month == 12:
+            next_month = date(selected_year + 1, 1, 1)
+            previous_month = date(selected_year, 11, 1)
+        elif selected_month == 1:
+            next_month = date(selected_year, 2, 1)
+            previous_month = date(selected_year - 1, 12, 1)
+        else:
+            next_month = date(selected_year, selected_month + 1, 1)
+            previous_month = date(selected_year, selected_month - 1, 1)
+        month_requests = []
+        if selected_contract:
+            query_end = next_month
+            month_requests = (
+                LeaveRequest.query.filter(
+                    LeaveRequest.user_id == current_user.id,
+                    LeaveRequest.contract_id == selected_contract.id,
+                    LeaveRequest.start_date < query_end,
+                    db.or_(
+                        db.and_(LeaveRequest.end_date.is_(None), LeaveRequest.start_date >= month_start),
+                        LeaveRequest.end_date >= month_start,
+                    ),
+                )
+                .order_by(LeaveRequest.start_date.asc(), LeaveRequest.id.asc())
+                .all()
+            )
+        return render_template(
+            "leaves.html",
+            active_contracts=active_contracts,
+            selected_contract=selected_contract,
+            available_categories=available_categories,
+            calendar_days=_month_calendar_days(selected_year, selected_month),
+            month_requests=month_requests,
+            selected_year=selected_year,
+            selected_month=selected_month,
+            month_label=month_start.strftime("%B %Y"),
+            previous_month=previous_month,
+            next_month=next_month,
+            leave_request_overlaps_day=_leave_request_overlaps_day,
         )
 
     @app.route("/users/privileges", methods=["GET", "POST"])
@@ -760,6 +1175,121 @@ def init_routes(app):
             places_of_work=places,
             place_label_fn=_contract_place_label,
             mode="edit",
+        )
+
+
+    @app.route("/leaves/manage", methods=["GET", "POST"])
+    @login_required
+    def manage_leaves():
+        if not _can_manage_leaves(current_user):
+            abort(403)
+
+        selected_legal_entity_id = request.values.get("legal_entity_id", type=int)
+        selected_user_id = request.values.get("user_id", type=int)
+        selected_contract_id = request.values.get("contract_id", type=int)
+        selected_status = _normalize_optional_text(request.values.get("status"))
+
+        if request.method == "POST":
+            leave_request_id = request.form.get("leave_request_id", type=int)
+            action = request.form.get("action")
+            leave_request = _leave_request_query_for_manager(current_user).filter(LeaveRequest.id == leave_request_id).first()
+            if leave_request is None:
+                flash("Leave request not found or not available to you.", "error")
+                return redirect(url_for("manage_leaves"))
+
+            if action == "approve":
+                approved_parts = _approve_leave_request(leave_request, current_user)
+                if not approved_parts:
+                    flash("You cannot add another approval to this leave request.", "error")
+                elif leave_request.status == LeaveRequestStatus.approved:
+                    flash("Leave request fully approved.", "success")
+                else:
+                    flash(f"Recorded your {' and '.join(approved_parts)} approval; another approval is still required.", "success")
+            elif action == "reject":
+                if leave_request.status != LeaveRequestStatus.pending_approval:
+                    flash("Only pending leave requests can be rejected.", "error")
+                else:
+                    leave_request.status = LeaveRequestStatus.rejected
+                    leave_request.decided_by_id = current_user.id
+                    flash("Leave request rejected.", "success")
+            elif action == "cancel":
+                if leave_request.status in {LeaveRequestStatus.cancelled, LeaveRequestStatus.rejected}:
+                    flash("This leave request is already closed.", "error")
+                else:
+                    leave_request.status = LeaveRequestStatus.cancelled
+                    leave_request.decided_by_id = current_user.id
+                    flash("Leave request cancelled.", "success")
+            else:
+                flash("Invalid leave action.", "error")
+                return redirect(url_for("manage_leaves"))
+
+            db.session.commit()
+            return redirect(
+                url_for(
+                    "manage_leaves",
+                    legal_entity_id=selected_legal_entity_id,
+                    user_id=selected_user_id,
+                    contract_id=selected_contract_id,
+                    status=selected_status,
+                )
+            )
+
+        base_query = _leave_request_query_for_manager(current_user)
+        accessible_legal_entity_ids = _accessible_leave_legal_entity_ids(current_user)
+        legal_entities_query = LegalEntity.query
+        if accessible_legal_entity_ids is not None:
+            legal_entities_query = legal_entities_query.filter(LegalEntity.id.in_(accessible_legal_entity_ids))
+        legal_entities = legal_entities_query.order_by(LegalEntity.name.asc()).all()
+
+        users = (
+            User.query.join(Contract)
+            .join(LeaveRequest, LeaveRequest.contract_id == Contract.id)
+            .filter(LeaveRequest.id.in_(base_query.with_entities(LeaveRequest.id)))
+            .order_by(User.username.asc())
+            .distinct()
+            .all()
+        )
+        contracts = (
+            Contract.query.join(LeaveRequest)
+            .filter(LeaveRequest.id.in_(base_query.with_entities(LeaveRequest.id)))
+            .order_by(Contract.start_date.desc(), Contract.id.desc())
+            .all()
+        )
+
+        filtered_query = base_query
+        if selected_legal_entity_id:
+            filtered_query = filtered_query.filter(Contract.legal_entity_id == selected_legal_entity_id)
+        if selected_user_id:
+            filtered_query = filtered_query.filter(LeaveRequest.user_id == selected_user_id)
+        if selected_contract_id:
+            filtered_query = filtered_query.filter(LeaveRequest.contract_id == selected_contract_id)
+        if selected_status:
+            try:
+                filtered_query = filtered_query.filter(LeaveRequest.status == LeaveRequestStatus(selected_status))
+            except ValueError:
+                flash("Invalid status filter ignored.", "error")
+
+        leave_requests = (
+            filtered_query
+            .order_by(LeaveRequest.start_date.desc(), LeaveRequest.id.desc())
+            .all()
+        )
+
+        return render_template(
+            "manage_leaves.html",
+            legal_entities=legal_entities,
+            users=users,
+            contracts=contracts,
+            leave_requests=leave_requests,
+            statuses=LeaveRequestStatus,
+            selected_legal_entity_id=selected_legal_entity_id,
+            selected_user_id=selected_user_id,
+            selected_contract_id=selected_contract_id,
+            selected_status=selected_status,
+            can_approve_ceo_part=_can_approve_ceo_part,
+            can_approve_leadership_part=_can_approve_leadership_part,
+            leave_request_end_date=_leave_request_end_date,
+            user_display_name=_user_display_name,
         )
 
     @app.route("/leave-limits", methods=["GET", "POST"])
