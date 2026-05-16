@@ -16,6 +16,9 @@ from .models import (
     Leadership,
     LeadershipPosition,
     LegalEntity,
+    LeaveRequest,
+    LeaveRequestCategory,
+    LeaveRequestStatus,
     LeaveType,
     PlaceOfWork,
     ProfessionalExam,
@@ -307,6 +310,99 @@ def _leave_type_available_for_contract(
     return True
 
 
+def _is_contract_active_on(contract: Contract, day: date) -> bool:
+    return contract.start_date <= day and (contract.end_date is None or contract.end_date >= day)
+
+
+def _active_contracts_for_user(user: User, day: date | None = None) -> list[Contract]:
+    active_day = day or date.today()
+    return sorted(
+        [contract for contract in user.contracts if _is_contract_active_on(contract, active_day)],
+        key=lambda contract: (contract.start_date, contract.id),
+        reverse=True,
+    )
+
+
+def _current_active_contract(user: User) -> Contract | None:
+    active_contracts = _active_contracts_for_user(user)
+    return active_contracts[0] if active_contracts else None
+
+
+def _has_child_dependents(user: User) -> bool:
+    return any(dependent.dependent_type == DependentType.child for dependent in user.dependents)
+
+
+def _has_positive_leave_limit(contract: Contract, leave_types: set[LeaveType]) -> bool:
+    return any(limit.leave_type in leave_types and limit.limit_days > 0 for limit in contract.leave_limits)
+
+
+def _available_leave_request_categories(user: User, contract: Contract) -> list[dict[str, object]]:
+    categories = [
+        {
+            "category": LeaveRequestCategory.paid_leave,
+            "label": "Paid leave",
+            "description": "Basic leave, supplementary leaves, parental leave, paternity leave, and leave carry-over.",
+            "end_required": True,
+        },
+        {
+            "category": LeaveRequestCategory.health_leave,
+            "label": "Health leave",
+            "description": "Sick leave and sickness benefit.",
+            "end_required": False,
+        },
+    ]
+    if _has_child_dependents(user):
+        categories.append(
+            {
+                "category": LeaveRequestCategory.childcare_sickness_benefit,
+                "label": "Childcare sickness benefit",
+                "description": "Available when a child dependent is recorded on your profile.",
+                "end_required": False,
+            }
+        )
+    childbirth_leave_types = {
+        LeaveType.maternity_leave,
+        LeaveType.childcare_fee,
+        LeaveType.childcare_allowance,
+    }
+    if _has_positive_leave_limit(contract, childbirth_leave_types):
+        categories.append(
+            {
+                "category": LeaveRequestCategory.childbirth_leave,
+                "label": "Childbirth leave",
+                "description": "Maternity leave, childcare fee, and childcare allowance.",
+                "end_required": False,
+            }
+        )
+    categories.append(
+        {
+            "category": LeaveRequestCategory.exemption_from_obligation_to_work,
+            "label": "Exemption from obligation to work",
+            "description": "Request time away under an exemption from work obligation.",
+            "end_required": False,
+        }
+    )
+    return categories
+
+
+def _month_calendar_days(year: int, month: int) -> list[date | None]:
+    first_day = date(year, month, 1)
+    if month == 12:
+        next_month = date(year + 1, 1, 1)
+    else:
+        next_month = date(year, month + 1, 1)
+    day_count = (next_month - first_day).days
+    days: list[date | None] = [None] * first_day.weekday()
+    days.extend(date(year, month, day) for day in range(1, day_count + 1))
+    while len(days) % 7:
+        days.append(None)
+    return days
+
+
+def _leave_request_overlaps_day(leave_request: LeaveRequest, day: date) -> bool:
+    end_date = leave_request.end_date or leave_request.start_date
+    return leave_request.start_date <= day <= end_date
+
 def _can_manage_privileges(user: User) -> bool:
     return user.is_authenticated and user.privilege in {UserPrivilege.hr, UserPrivilege.ceo}
 
@@ -414,6 +510,134 @@ def init_routes(app):
             can_manage_leadership=_can_manage_privileges(current_user),
             can_manage_leave_limits=_can_manage_privileges(current_user),
             profile_status_label=_profile_status_label(current_user.profile),
+        )
+
+    @app.route("/leaves", methods=["GET", "POST"])
+    @login_required
+    def leaves():
+        today = date.today()
+        active_contracts = _active_contracts_for_user(current_user, today)
+        selected_contract_id = request.values.get("contract_id", type=int)
+        current_contract = _current_active_contract(current_user)
+        selected_contract = None
+        if selected_contract_id:
+            selected_contract = next(
+                (contract for contract in active_contracts if contract.id == selected_contract_id),
+                None,
+            )
+            if selected_contract is None:
+                flash("Please select one of your active contracts.", "error")
+        if selected_contract is None:
+            selected_contract = current_contract
+
+        selected_year = request.values.get("year", type=int) or today.year
+        selected_month = request.values.get("month", type=int) or today.month
+        if selected_year < 1970 or selected_year > 2100:
+            selected_year = today.year
+        if selected_month < 1 or selected_month > 12:
+            selected_month = today.month
+
+        if request.method == "POST":
+            if selected_contract is None:
+                flash("You need an active contract before applying for leave.", "error")
+                return redirect(url_for("leaves"))
+
+            category_value = request.form.get("category")
+            available_categories = _available_leave_request_categories(current_user, selected_contract)
+            available_by_value = {item["category"].value: item for item in available_categories}
+            category_definition = available_by_value.get(category_value)
+            if category_definition is None:
+                flash("Please choose an available leave type.", "error")
+                return redirect(
+                    url_for("leaves", contract_id=selected_contract.id, year=selected_year, month=selected_month)
+                )
+
+            start_date = parse_iso_date(request.form.get("start_date"))
+            end_date = parse_iso_date(request.form.get("end_date"))
+            if start_date is None:
+                flash("Start date is required.", "error")
+                return redirect(
+                    url_for("leaves", contract_id=selected_contract.id, year=selected_year, month=selected_month)
+                )
+            if category_definition["end_required"] and end_date is None:
+                flash("Paid leave requests require both start and end date.", "error")
+                return redirect(
+                    url_for("leaves", contract_id=selected_contract.id, year=selected_year, month=selected_month)
+                )
+            if end_date is not None and end_date < start_date:
+                flash("End date cannot be earlier than the start date.", "error")
+                return redirect(
+                    url_for("leaves", contract_id=selected_contract.id, year=selected_year, month=selected_month)
+                )
+            if not _is_contract_active_on(selected_contract, start_date):
+                flash("The request start date must fall within the selected active contract.", "error")
+                return redirect(
+                    url_for("leaves", contract_id=selected_contract.id, year=selected_year, month=selected_month)
+                )
+            if end_date is not None and not _is_contract_active_on(selected_contract, end_date):
+                flash("The request end date must fall within the selected active contract.", "error")
+                return redirect(
+                    url_for("leaves", contract_id=selected_contract.id, year=selected_year, month=selected_month)
+                )
+
+            leave_request = LeaveRequest(
+                user_id=current_user.id,
+                contract_id=selected_contract.id,
+                category=LeaveRequestCategory(category_value),
+                start_date=start_date,
+                end_date=end_date,
+                status=LeaveRequestStatus.pending_approval,
+                note=_normalize_optional_text(request.form.get("note")),
+            )
+            db.session.add(leave_request)
+            db.session.commit()
+            flash("Leave request submitted and marked as pending approval.", "success")
+            return redirect(
+                url_for("leaves", contract_id=selected_contract.id, year=start_date.year, month=start_date.month)
+            )
+
+        available_categories = (
+            _available_leave_request_categories(current_user, selected_contract) if selected_contract else []
+        )
+        month_start = date(selected_year, selected_month, 1)
+        if selected_month == 12:
+            next_month = date(selected_year + 1, 1, 1)
+            previous_month = date(selected_year, 11, 1)
+        elif selected_month == 1:
+            next_month = date(selected_year, 2, 1)
+            previous_month = date(selected_year - 1, 12, 1)
+        else:
+            next_month = date(selected_year, selected_month + 1, 1)
+            previous_month = date(selected_year, selected_month - 1, 1)
+        month_requests = []
+        if selected_contract:
+            query_end = next_month
+            month_requests = (
+                LeaveRequest.query.filter(
+                    LeaveRequest.user_id == current_user.id,
+                    LeaveRequest.contract_id == selected_contract.id,
+                    LeaveRequest.start_date < query_end,
+                    db.or_(
+                        db.and_(LeaveRequest.end_date.is_(None), LeaveRequest.start_date >= month_start),
+                        LeaveRequest.end_date >= month_start,
+                    ),
+                )
+                .order_by(LeaveRequest.start_date.asc(), LeaveRequest.id.asc())
+                .all()
+            )
+        return render_template(
+            "leaves.html",
+            active_contracts=active_contracts,
+            selected_contract=selected_contract,
+            available_categories=available_categories,
+            calendar_days=_month_calendar_days(selected_year, selected_month),
+            month_requests=month_requests,
+            selected_year=selected_year,
+            selected_month=selected_month,
+            month_label=month_start.strftime("%B %Y"),
+            previous_month=previous_month,
+            next_month=next_month,
+            leave_request_overlaps_day=_leave_request_overlaps_day,
         )
 
     @app.route("/users/privileges", methods=["GET", "POST"])

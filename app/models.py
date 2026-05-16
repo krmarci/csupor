@@ -55,6 +55,22 @@ class LeaveType(enum.Enum):
     exemption_from_obligation_to_work = "exemption from obligation to work"
 
 
+class LeaveRequestCategory(enum.Enum):
+    paid_leave = "paid leave"
+    health_leave = "health leave"
+    childcare_sickness_benefit = "childcare sickness benefit"
+    childbirth_leave = "childbirth leave"
+    exemption_from_obligation_to_work = "exemption from obligation to work"
+
+
+class LeaveRequestStatus(enum.Enum):
+    pending_approval = "pending approval"
+    approved = "approved"
+    rejected = "rejected"
+    pending_cancellation = "pending cancellation"
+    cancelled = "cancelled"
+
+
 class MaritalStatus(enum.Enum):
     single = "single"
     married = "married"
@@ -103,6 +119,7 @@ class User(UserMixin, db.Model):
         "ProfessionalExam", back_populates="user", uselist=False, cascade="all, delete-orphan"
     )
     contracts = db.relationship("Contract", back_populates="user", cascade="all, delete-orphan")
+    leave_requests = db.relationship("LeaveRequest", back_populates="user", cascade="all, delete-orphan")
 
     def set_password(self, raw_password: str) -> None:
         self.password_hash = generate_password_hash(raw_password)
@@ -237,6 +254,7 @@ class Contract(db.Model):
     place_of_work = db.relationship("PlaceOfWork", back_populates="contracts")
     leadership_positions = db.relationship("Leadership", back_populates="contract", cascade="all, delete-orphan")
     leave_limits = db.relationship("ContractLeaveLimit", back_populates="contract", cascade="all, delete-orphan")
+    leave_requests = db.relationship("LeaveRequest", back_populates="contract", cascade="all, delete-orphan")
 
 
 class ContractLeaveLimit(db.Model):
@@ -250,6 +268,26 @@ class ContractLeaveLimit(db.Model):
     period_end = db.Column(db.Date, nullable=True)
 
     contract = db.relationship("Contract", back_populates="leave_limits")
+
+
+class LeaveRequest(db.Model):
+    __tablename__ = "leave_requests"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    contract_id = db.Column(db.Integer, db.ForeignKey("contracts.id"), nullable=False)
+    category = db.Column(db.Enum(LeaveRequestCategory, values_callable=_enum_values), nullable=False)
+    start_date = db.Column(db.Date, nullable=False)
+    end_date = db.Column(db.Date, nullable=True)
+    status = db.Column(
+        db.Enum(LeaveRequestStatus, values_callable=_enum_values),
+        nullable=False,
+        default=LeaveRequestStatus.pending_approval,
+    )
+    note = db.Column(db.Text, nullable=True)
+
+    user = db.relationship("User", back_populates="leave_requests")
+    contract = db.relationship("Contract", back_populates="leave_requests")
 
 
 class Leadership(db.Model):

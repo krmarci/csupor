@@ -56,6 +56,18 @@
   </div>
 
   <div class="dashboard-grid">
+    <section class="card span-12">
+      <div class="section-heading">
+        <div>
+          <h2>Leave calendar</h2>
+          <p>Select an active contract, view your monthly leave calendar, and apply for leave in a polished self-service workflow.</p>
+        </div>
+        <a class="button button-primary" href="{{ url_for('leaves') }}">Open leave calendar</a>
+      </div>
+      <div class="empty-state">
+        New leave requests are created with pending approval status. HR approval handling will be managed separately.
+      </div>
+    </section>
     <section class="card span-7">
       <div class="section-heading">
         <div>
