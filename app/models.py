@@ -119,7 +119,12 @@ class User(UserMixin, db.Model):
         "ProfessionalExam", back_populates="user", uselist=False, cascade="all, delete-orphan"
     )
     contracts = db.relationship("Contract", back_populates="user", cascade="all, delete-orphan")
-    leave_requests = db.relationship("LeaveRequest", back_populates="user", cascade="all, delete-orphan")
+    leave_requests = db.relationship(
+        "LeaveRequest",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        foreign_keys="LeaveRequest.user_id",
+    )
 
     def set_password(self, raw_password: str) -> None:
         self.password_hash = generate_password_hash(raw_password)
@@ -285,9 +290,15 @@ class LeaveRequest(db.Model):
         default=LeaveRequestStatus.pending_approval,
     )
     note = db.Column(db.Text, nullable=True)
+    ceo_approved_by_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    leadership_approved_by_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    decided_by_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
 
-    user = db.relationship("User", back_populates="leave_requests")
+    user = db.relationship("User", back_populates="leave_requests", foreign_keys=[user_id])
     contract = db.relationship("Contract", back_populates="leave_requests")
+    ceo_approver = db.relationship("User", foreign_keys=[ceo_approved_by_id])
+    leadership_approver = db.relationship("User", foreign_keys=[leadership_approved_by_id])
+    decided_by = db.relationship("User", foreign_keys=[decided_by_id])
 
 
 class Leadership(db.Model):
