@@ -77,7 +77,7 @@
       <label for="note">Note</label>
       <textarea id="note" name="note" placeholder="Add context for HR, if needed."></textarea>
 
-      <button type="submit">Submit request</button>
+      <button type="submit" name="action" value="submit">Submit request</button>
     </form>
   </aside>
 
@@ -105,7 +105,7 @@
       >
         <time datetime="{{ day.isoformat() }}">{{ day.day }}</time>
         {% for leave_request in month_requests %}
-          {% if leave_request_overlaps_day(leave_request, day) %}
+          {% if leave_request.status.value not in ['cancelled', 'rejected'] and leave_request_overlaps_day(leave_request, day) %}
           <span class="leave-chip status-{{ leave_request.status.value|replace(' ', '-') }}" title="{{ leave_request.category.value|capitalize }} · {{ leave_request.status.value }}">
             {{ leave_request.category.value|capitalize }}
           </span>
@@ -127,7 +127,28 @@
           <strong>{{ leave_request.category.value|capitalize }}</strong>
           <p>{{ leave_request.start_date }}{% if leave_request.end_date %} → {{ leave_request.end_date }}{% else %} · open-ended / single day{% endif %}</p>
         </div>
-        <span class="status-pill status-{{ leave_request.status.value|replace(' ', '-') }}">{{ leave_request.status.value|capitalize }}</span>
+        <div class="request-actions">
+          <span class="status-pill status-{{ leave_request.status.value|replace(' ', '-') }}">{{ leave_request.status.value|capitalize }}</span>
+          {% if leave_request.status.value in ['approved', 'pending approval'] %}
+          <form method="post" class="inline-form">
+            <input type="hidden" name="action" value="cancel">
+            <input type="hidden" name="leave_request_id" value="{{ leave_request.id }}">
+            <input type="hidden" name="contract_id" value="{{ selected_contract.id }}">
+            <input type="hidden" name="year" value="{{ selected_year }}">
+            <input type="hidden" name="month" value="{{ selected_month }}">
+            <button type="submit" class="button-secondary">Cancel</button>
+          </form>
+          {% elif leave_request.status.value == 'pending cancellation' %}
+          <form method="post" class="inline-form">
+            <input type="hidden" name="action" value="undo_cancel">
+            <input type="hidden" name="leave_request_id" value="{{ leave_request.id }}">
+            <input type="hidden" name="contract_id" value="{{ selected_contract.id }}">
+            <input type="hidden" name="year" value="{{ selected_year }}">
+            <input type="hidden" name="month" value="{{ selected_month }}">
+            <button type="submit" class="button-secondary">Undo</button>
+          </form>
+          {% endif %}
+        </div>
       </article>
       {% endfor %}
       {% else %}
@@ -385,6 +406,14 @@
   .request-item p {
     margin: 4px 0 0;
     color: var(--text-soft);
+  }
+
+  .request-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
 
   @media (max-width: 960px) {

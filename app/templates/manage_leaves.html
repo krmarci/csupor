@@ -72,9 +72,9 @@
       <thead>
         <tr>
           <th>Employee</th>
-          <th>Legal entity / contract</th>
           <th>Leave</th>
           <th>Status</th>
+          <th>Max workplace leaves</th>
           <th>Approvals</th>
           <th>Actions</th>
         </tr>
@@ -84,11 +84,8 @@
         <tr>
           <td>
             <strong>{{ user_display_name(leave_request.user) }}</strong>
-            <div class="muted">{{ leave_request.user.username }}</div>
-          </td>
-          <td>
-            <strong>{{ leave_request.contract.employer.name }}</strong>
-            <div class="muted">{{ leave_request.contract.job_title }} · {{ leave_request.contract.start_date }} → {{ leave_request.contract.end_date or 'ongoing' }}</div>
+            <div class="muted">{{ leave_request.contract.employer.name }}</div>
+            <div class="muted">{{ leave_request.contract.place_of_work.address }}</div>
           </td>
           <td>
             <strong>{{ leave_request.category.value|capitalize }}</strong>
@@ -97,6 +94,10 @@
           </td>
           <td>
             <span class="status-pill status-{{ leave_request.status.value|replace(' ', '-') }}">{{ leave_request.status.value|capitalize }}</span>
+          </td>
+          <td>
+            <strong>{{ workplace_leave_counts[leave_request.id] }}</strong>
+            <div class="muted">same workplace</div>
           </td>
           <td>
             <div class="approval-stack">
@@ -113,9 +114,17 @@
               <input type="hidden" name="status" value="{{ selected_status or '' }}">
               {% set can_add_ceo = leave_request.ceo_approved_by_id is none and can_approve_ceo_part(current_user, leave_request) %}
               {% set can_add_leadership = leave_request.leadership_approved_by_id is none and can_approve_leadership_part(current_user, leave_request) %}
-              <button type="submit" name="action" value="approve" {% if leave_request.status.value != 'pending approval' or not (can_add_ceo or can_add_leadership) %}disabled{% endif %}>Approve</button>
-              <button type="submit" name="action" value="reject" class="button-secondary" {% if leave_request.status.value != 'pending approval' %}disabled{% endif %}>Reject</button>
-              <button type="submit" name="action" value="cancel" class="button-secondary" {% if leave_request.status.value in ['cancelled', 'rejected'] %}disabled{% endif %}>Cancel</button>
+              {% if leave_request.status.value == 'pending approval' %}
+              <button type="submit" name="action" value="approve" {% if not (can_add_ceo or can_add_leadership) %}disabled{% endif %}>Approve</button>
+              <button type="submit" name="action" value="reject" class="button-secondary">Reject</button>
+              {% elif leave_request.status.value == 'approved' %}
+              <button type="submit" name="action" value="cancel" class="button-secondary">Cancel</button>
+              {% elif leave_request.status.value == 'pending cancellation' %}
+              <button type="submit" name="action" value="cancel" class="button-secondary">Cancel</button>
+              <button type="submit" name="action" value="reject" class="button-secondary">Reject</button>
+              {% else %}
+              <span class="muted">No actions available</span>
+              {% endif %}
             </form>
           </td>
         </tr>

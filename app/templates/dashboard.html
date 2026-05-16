@@ -92,8 +92,14 @@
           </div>
           <form method="post" action="{{ url_for('manage_leaves') }}" class="inline-form">
             <input type="hidden" name="leave_request_id" value="{{ leave_request.id }}">
+            <input type="hidden" name="return_to" value="dashboard">
+            {% if leave_request.status.value == 'pending approval' %}
             <button type="submit" name="action" value="approve">Approve</button>
             <button type="submit" name="action" value="reject" class="button-secondary">Reject</button>
+            {% elif leave_request.status.value == 'pending cancellation' %}
+            <button type="submit" name="action" value="cancel" class="button-secondary">Cancel</button>
+            <button type="submit" name="action" value="reject" class="button-secondary">Reject</button>
+            {% endif %}
           </form>
         </article>
         {% endfor %}

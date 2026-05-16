@@ -517,27 +517,68 @@ def _approve_leave_request(leave_request: LeaveRequest, approver: User) -> list[
     return approved_parts
 
 
-def _pending_leave_requests_for_manager(user: User, limit: int | None = None) -> list[LeaveRequest]:
+def _manager_review_leave_requests(user: User, limit: int | None = None) -> list[LeaveRequest]:
     query = (
         _leave_request_query_for_manager(user)
-        .filter(LeaveRequest.status == LeaveRequestStatus.pending_approval)
+        .filter(
+            LeaveRequest.status.in_(
+                (
+                    LeaveRequestStatus.pending_approval,
+                    LeaveRequestStatus.pending_cancellation,
+                )
+            )
+        )
         .order_by(LeaveRequest.start_date.asc(), LeaveRequest.id.asc())
     )
     actionable_requests = [
         leave_request
         for leave_request in query.all()
-        if (
-            leave_request.ceo_approved_by_id is None
-            and _can_approve_ceo_part(user, leave_request)
-        )
+        if leave_request.status == LeaveRequestStatus.pending_cancellation
         or (
-            leave_request.leadership_approved_by_id is None
-            and _can_approve_leadership_part(user, leave_request)
+            leave_request.status == LeaveRequestStatus.pending_approval
+            and (
+                (
+                    leave_request.ceo_approved_by_id is None
+                    and _can_approve_ceo_part(user, leave_request)
+                )
+                or (
+                    leave_request.leadership_approved_by_id is None
+                    and _can_approve_leadership_part(user, leave_request)
+                )
+            )
         )
     ]
     if limit:
         return actionable_requests[:limit]
     return actionable_requests
+
+
+def _max_workplace_leave_count_during_request(leave_request: LeaveRequest) -> int:
+    request_end_date = _leave_request_end_date(leave_request)
+    overlapping_requests = (
+        LeaveRequest.query.join(Contract)
+        .filter(
+            Contract.place_of_work_id == leave_request.contract.place_of_work_id,
+            LeaveRequest.status.in_(BLOCKING_LEAVE_REQUEST_STATUSES),
+            LeaveRequest.start_date <= request_end_date,
+            db.or_(
+                db.and_(LeaveRequest.end_date.is_(None), LeaveRequest.start_date >= leave_request.start_date),
+                LeaveRequest.end_date >= leave_request.start_date,
+            ),
+        )
+        .all()
+    )
+    max_count = 0
+    current_day = leave_request.start_date
+    while current_day <= request_end_date:
+        employees_on_leave = {
+            overlapping_request.user_id
+            for overlapping_request in overlapping_requests
+            if _leave_request_overlaps_day(overlapping_request, current_day)
+        }
+        max_count = max(max_count, len(employees_on_leave))
+        current_day = date.fromordinal(current_day.toordinal() + 1)
+    return max_count
 
 
 def _overlapping_leave_request(
@@ -674,7 +715,7 @@ def init_routes(app):
             can_manage_leadership=_can_manage_privileges(current_user),
             can_manage_leave_limits=_can_manage_privileges(current_user),
             can_manage_leaves=_can_manage_leaves(current_user),
-            pending_leave_requests=_pending_leave_requests_for_manager(current_user, limit=6)
+            pending_leave_requests=_manager_review_leave_requests(current_user, limit=6)
             if _can_manage_leaves(current_user)
             else [],
             profile_status_label=_profile_status_label(current_user.profile),
@@ -706,9 +747,46 @@ def init_routes(app):
             selected_month = today.month
 
         if request.method == "POST":
+            action = request.form.get("action", "submit")
             if selected_contract is None:
                 flash("You need an active contract before applying for leave.", "error")
                 return redirect(url_for("leaves"))
+
+            if action in {"cancel", "undo_cancel"}:
+                leave_request_id = request.form.get("leave_request_id", type=int)
+                leave_request = LeaveRequest.query.filter(
+                    LeaveRequest.id == leave_request_id,
+                    LeaveRequest.user_id == current_user.id,
+                    LeaveRequest.contract_id == selected_contract.id,
+                ).first()
+                if leave_request is None:
+                    flash("Leave request not found.", "error")
+                elif action == "cancel":
+                    if leave_request.status == LeaveRequestStatus.pending_approval:
+                        leave_request.status = LeaveRequestStatus.cancelled
+                        leave_request.decided_by_id = current_user.id
+                        db.session.commit()
+                        flash("Pending leave request cancelled.", "success")
+                    elif leave_request.status == LeaveRequestStatus.approved:
+                        leave_request.status = LeaveRequestStatus.pending_cancellation
+                        db.session.commit()
+                        flash("Leave cancellation requested.", "success")
+                    else:
+                        flash("Only approved or pending approval leaves can be cancelled here.", "error")
+                elif leave_request.status == LeaveRequestStatus.pending_cancellation:
+                    leave_request.status = LeaveRequestStatus.approved
+                    db.session.commit()
+                    flash("Leave cancellation request undone.", "success")
+                else:
+                    flash("Only pending cancellation leaves can be undone.", "error")
+                return redirect(
+                    url_for("leaves", contract_id=selected_contract.id, year=selected_year, month=selected_month)
+                )
+            if action != "submit":
+                flash("Invalid leave action.", "error")
+                return redirect(
+                    url_for("leaves", contract_id=selected_contract.id, year=selected_year, month=selected_month)
+                )
 
             category_value = request.form.get("category")
             available_categories = _available_leave_request_categories(current_user, selected_contract)
@@ -1192,10 +1270,11 @@ def init_routes(app):
         if request.method == "POST":
             leave_request_id = request.form.get("leave_request_id", type=int)
             action = request.form.get("action")
+            return_to = request.form.get("return_to")
             leave_request = _leave_request_query_for_manager(current_user).filter(LeaveRequest.id == leave_request_id).first()
             if leave_request is None:
                 flash("Leave request not found or not available to you.", "error")
-                return redirect(url_for("manage_leaves"))
+                return redirect(url_for("dashboard" if return_to == "dashboard" else "manage_leaves"))
 
             if action == "approve":
                 approved_parts = _approve_leave_request(leave_request, current_user)
@@ -1206,24 +1285,29 @@ def init_routes(app):
                 else:
                     flash(f"Recorded your {' and '.join(approved_parts)} approval; another approval is still required.", "success")
             elif action == "reject":
-                if leave_request.status != LeaveRequestStatus.pending_approval:
-                    flash("Only pending leave requests can be rejected.", "error")
-                else:
+                if leave_request.status == LeaveRequestStatus.pending_approval:
                     leave_request.status = LeaveRequestStatus.rejected
                     leave_request.decided_by_id = current_user.id
                     flash("Leave request rejected.", "success")
-            elif action == "cancel":
-                if leave_request.status in {LeaveRequestStatus.cancelled, LeaveRequestStatus.rejected}:
-                    flash("This leave request is already closed.", "error")
+                elif leave_request.status == LeaveRequestStatus.pending_cancellation:
+                    leave_request.status = LeaveRequestStatus.approved
+                    flash("Leave cancellation rejected; request remains approved.", "success")
                 else:
+                    flash("Only pending approval or pending cancellation leave requests can be rejected.", "error")
+            elif action == "cancel":
+                if leave_request.status in {LeaveRequestStatus.approved, LeaveRequestStatus.pending_cancellation}:
                     leave_request.status = LeaveRequestStatus.cancelled
                     leave_request.decided_by_id = current_user.id
                     flash("Leave request cancelled.", "success")
+                else:
+                    flash("Only approved or pending cancellation leave requests can be cancelled.", "error")
             else:
                 flash("Invalid leave action.", "error")
-                return redirect(url_for("manage_leaves"))
+                return redirect(url_for("dashboard" if return_to == "dashboard" else "manage_leaves"))
 
             db.session.commit()
+            if return_to == "dashboard":
+                return redirect(url_for("dashboard"))
             return redirect(
                 url_for(
                     "manage_leaves",
@@ -1274,6 +1358,10 @@ def init_routes(app):
             .order_by(LeaveRequest.start_date.desc(), LeaveRequest.id.desc())
             .all()
         )
+        workplace_leave_counts = {
+            leave_request.id: _max_workplace_leave_count_during_request(leave_request)
+            for leave_request in leave_requests
+        }
 
         return render_template(
             "manage_leaves.html",
@@ -1289,6 +1377,7 @@ def init_routes(app):
             can_approve_ceo_part=_can_approve_ceo_part,
             can_approve_leadership_part=_can_approve_leadership_part,
             leave_request_end_date=_leave_request_end_date,
+            workplace_leave_counts=workplace_leave_counts,
             user_display_name=_user_display_name,
         )
 
