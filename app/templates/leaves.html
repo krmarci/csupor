@@ -20,8 +20,8 @@
 </section>
 
 {% if active_contracts %}
-<section class="leave-workspace">
-  <aside class="leave-sidebar">
+<section class="leave-workspace dashboard-grid">
+  <aside class="leave-sidebar span-5">
     <form id="contract-picker" method="get" class="leave-card contract-picker-card">
       <label for="contract_id">Assign leaves to contract</label>
       <select id="contract_id" name="contract_id" onchange="this.form.submit()">
@@ -61,7 +61,7 @@
         {% endfor %}
       </div>
 
-      <div class="date-pair">
+      <div class="date-pair" id="leave-date-fields">
         <div>
           <label for="start_date">Start date *</label>
           <input id="start_date" name="start_date" type="date" required>
@@ -72,6 +72,7 @@
           <small id="end-date-help" class="help-text">Required for paid leave. Optional for all other leave types.</small>
         </div>
       </div>
+      <small id="calendar-selection-help" class="help-text">Tip: click a day in the calendar to choose the start date, then click another day to choose the end date.</small>
 
       <label for="note">Note</label>
       <textarea id="note" name="note" placeholder="Add context for HR, if needed."></textarea>
@@ -80,7 +81,7 @@
     </form>
   </aside>
 
-  <section class="leave-calendar-card">
+  <section class="leave-calendar-card span-7">
     <div class="calendar-toolbar">
       <a class="button button-secondary" href="{{ url_for('leaves', contract_id=selected_contract.id, year=previous_month.year, month=previous_month.month) }}">← {{ previous_month.strftime('%b') }}</a>
       <div>
@@ -95,18 +96,25 @@
     </div>
     <div class="calendar-grid day-grid">
       {% for day in calendar_days %}
-      <div class="calendar-day {% if not day %}empty-day{% endif %}">
-        {% if day %}
+      {% if day %}
+      <button
+        type="button"
+        class="calendar-day calendar-day-button"
+        data-calendar-date="{{ day.isoformat() }}"
+        aria-label="Select {{ day.strftime('%B') }} {{ day.day }}, {{ day.year }} as a leave date"
+      >
         <time datetime="{{ day.isoformat() }}">{{ day.day }}</time>
         {% for leave_request in month_requests %}
           {% if leave_request_overlaps_day(leave_request, day) %}
-          <div class="leave-chip status-{{ leave_request.status.value|replace(' ', '-') }}" title="{{ leave_request.category.value|capitalize }} · {{ leave_request.status.value }}">
+          <span class="leave-chip status-{{ leave_request.status.value|replace(' ', '-') }}" title="{{ leave_request.category.value|capitalize }} · {{ leave_request.status.value }}">
             {{ leave_request.category.value|capitalize }}
-          </div>
+          </span>
           {% endif %}
         {% endfor %}
-        {% endif %}
-      </div>
+      </button>
+      {% else %}
+      <div class="calendar-day empty-day" aria-hidden="true"></div>
+      {% endif %}
       {% endfor %}
     </div>
 
@@ -192,8 +200,14 @@
   }
 
   .leave-workspace {
-    grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 22px;
     align-items: start;
+  }
+
+  .leave-sidebar,
+  .leave-calendar-card {
+    min-width: 0;
   }
 
   .leave-sidebar,
@@ -205,6 +219,12 @@
   .leave-card,
   .leave-calendar-card {
     padding: 22px;
+  }
+
+  .leave-calendar-card {
+    width: 100%;
+    max-width: 780px;
+    justify-self: start;
   }
 
   .contract-picker-card {
@@ -254,32 +274,60 @@
   }
 
   .weekday-grid {
-    gap: 8px;
-    margin-bottom: 8px;
+    gap: 6px;
+    margin-bottom: 6px;
     color: var(--text-soft);
     font-weight: 800;
     text-align: center;
   }
 
   .day-grid {
-    gap: 8px;
+    gap: 6px;
   }
 
   .calendar-day {
-    min-height: 112px;
-    padding: 10px;
+    min-height: 74px;
+    padding: 7px;
     border: 1px solid rgba(226, 232, 240, 0.9);
-    border-radius: 18px;
+    border-radius: 14px;
     background: linear-gradient(180deg, #ffffff, #fff7ed);
     overflow: hidden;
   }
 
+  .calendar-day-button {
+    width: 100%;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+  }
+
+  .calendar-day-button:hover,
+  .calendar-day-button:focus-visible {
+    border-color: rgba(234, 88, 12, 0.62);
+    box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.12);
+    outline: none;
+    transform: translateY(-1px);
+  }
+
+  .calendar-day.is-range-start,
+  .calendar-day.is-range-end {
+    border-color: rgba(234, 88, 12, 0.9);
+    background: linear-gradient(180deg, #fed7aa, #ffedd5);
+  }
+
+  .calendar-day.is-in-range {
+    border-color: rgba(251, 146, 60, 0.72);
+    background: linear-gradient(180deg, #fff7ed, #ffedd5);
+  }
+
   .calendar-day time {
     display: inline-grid;
-    width: 30px;
-    height: 30px;
+    width: 26px;
+    height: 26px;
     place-items: center;
-    border-radius: 10px;
+    border-radius: 9px;
     font-weight: 800;
     color: var(--primary-strong);
     background: rgba(234, 88, 12, 0.12);
@@ -300,8 +348,8 @@
 
   .leave-chip {
     width: 100%;
-    margin-top: 8px;
-    padding: 7px 9px;
+    margin-top: 5px;
+    padding: 5px 7px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -359,9 +407,9 @@
     }
 
     .calendar-day {
-      min-height: 86px;
-      padding: 7px;
-      border-radius: 14px;
+      min-height: 62px;
+      padding: 6px;
+      border-radius: 12px;
     }
 
     .leave-chip {
@@ -373,9 +421,11 @@
 
 <script>
   const categorySelect = document.getElementById("category");
+  const startDateInput = document.getElementById("start_date");
   const endDateInput = document.getElementById("end_date");
   const endDateRequiredLabel = document.getElementById("end-date-required-label");
   const helpBlocks = document.querySelectorAll("[data-category-help]");
+  const selectableDays = document.querySelectorAll("[data-calendar-date]");
 
   const updateLeaveTypeUi = () => {
     if (!categorySelect || !endDateInput) return;
@@ -388,9 +438,55 @@
     });
   };
 
+  const syncCalendarSelection = () => {
+    if (!startDateInput || !endDateInput) return;
+    const startValue = startDateInput.value;
+    const endValue = endDateInput.value;
+
+    selectableDays.forEach((day) => {
+      const dayValue = day.dataset.calendarDate;
+      const startsRange = dayValue === startValue;
+      const endsRange = endValue && dayValue === endValue;
+      const inRange = startValue && endValue && dayValue > startValue && dayValue < endValue;
+
+      day.classList.toggle("is-range-start", startsRange);
+      day.classList.toggle("is-range-end", Boolean(endsRange));
+      day.classList.toggle("is-in-range", Boolean(inRange));
+      day.setAttribute(
+        "aria-pressed",
+        startsRange || endsRange || inRange ? "true" : "false"
+      );
+    });
+  };
+
+  const selectCalendarDate = (selectedDate) => {
+    if (!startDateInput || !endDateInput) return;
+
+    const hasCompleteRange = startDateInput.value && endDateInput.value;
+    if (!startDateInput.value || hasCompleteRange || selectedDate < startDateInput.value) {
+      startDateInput.value = selectedDate;
+      endDateInput.value = "";
+    } else if (selectedDate === startDateInput.value) {
+      endDateInput.value = "";
+    } else {
+      endDateInput.value = selectedDate;
+    }
+
+    syncCalendarSelection();
+  };
+
+  selectableDays.forEach((day) => {
+    day.addEventListener("click", () => selectCalendarDate(day.dataset.calendarDate));
+  });
+
+  [startDateInput, endDateInput].forEach((input) => {
+    input?.addEventListener("change", syncCalendarSelection);
+  });
+
   if (categorySelect) {
     categorySelect.addEventListener("change", updateLeaveTypeUi);
     updateLeaveTypeUi();
   }
+  syncCalendarSelection();
 </script>
 {% endblock %}
