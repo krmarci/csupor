@@ -20,8 +20,8 @@
 </section>
 
 {% if active_contracts %}
-<section class="leave-workspace">
-  <aside class="leave-sidebar">
+<section class="leave-workspace dashboard-grid">
+  <aside class="leave-sidebar span-5">
     <form id="contract-picker" method="get" class="leave-card contract-picker-card">
       <label for="contract_id">Assign leaves to contract</label>
       <select id="contract_id" name="contract_id" onchange="this.form.submit()">
@@ -81,7 +81,7 @@
     </form>
   </aside>
 
-  <section class="leave-calendar-card">
+  <section class="leave-calendar-card span-7">
     <div class="calendar-toolbar">
       <a class="button button-secondary" href="{{ url_for('leaves', contract_id=selected_contract.id, year=previous_month.year, month=previous_month.month) }}">← {{ previous_month.strftime('%b') }}</a>
       <div>
@@ -200,9 +200,8 @@
   }
 
   .leave-workspace {
-    grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
-    column-gap: 28px;
-    row-gap: 22px;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 22px;
     align-items: start;
   }
 
