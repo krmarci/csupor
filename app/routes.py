@@ -411,6 +411,135 @@ def _leave_request_overlaps_day(leave_request: LeaveRequest, day: date) -> bool:
     return leave_request.start_date <= day <= end_date
 
 
+def _leave_request_end_date(leave_request: LeaveRequest) -> date:
+    return leave_request.end_date or leave_request.start_date
+
+
+def _user_display_name(user: User) -> str:
+    return user.profile.full_name if user.profile and user.profile.full_name else user.username
+
+
+def _leadership_active_on(leadership: Leadership, day: date) -> bool:
+    return leadership.start_date <= day and (leadership.end_date is None or leadership.end_date >= day)
+
+
+def _active_leadership_for_user(user: User, day: date | None = None) -> list[Leadership]:
+    active_day = day or date.today()
+    return [
+        leadership
+        for contract in user.contracts
+        for leadership in contract.leadership_positions
+        if _leadership_active_on(leadership, active_day)
+    ]
+
+
+def _active_leadership_for_user_entity(user: User, legal_entity_id: int, day: date | None = None) -> list[Leadership]:
+    active_day = day or date.today()
+    return [
+        leadership
+        for leadership in _active_leadership_for_user(user, active_day)
+        if leadership.legal_entity_id == legal_entity_id
+    ]
+
+
+def _is_active_principal_for_entity(user: User, legal_entity_id: int, day: date | None = None) -> bool:
+    return any(
+        leadership.position == LeadershipPosition.principal
+        for leadership in _active_leadership_for_user_entity(user, legal_entity_id, day)
+    )
+
+
+def _can_manage_leaves(user: User) -> bool:
+    return user.is_authenticated and (
+        user.privilege == UserPrivilege.ceo or bool(_active_leadership_for_user(user))
+    )
+
+
+def _accessible_leave_legal_entity_ids(user: User) -> set[int] | None:
+    if user.privilege == UserPrivilege.ceo:
+        return None
+    return {leadership.legal_entity_id for leadership in _active_leadership_for_user(user)}
+
+
+def _leave_request_query_for_manager(user: User):
+    query = LeaveRequest.query.join(Contract)
+    legal_entity_ids = _accessible_leave_legal_entity_ids(user)
+    if legal_entity_ids is not None:
+        if not legal_entity_ids:
+            return query.filter(db.false())
+        query = query.filter(Contract.legal_entity_id.in_(legal_entity_ids))
+    return query
+
+
+def _can_approve_ceo_part(user: User, leave_request: LeaveRequest) -> bool:
+    return user.privilege == UserPrivilege.ceo
+
+
+def _can_approve_leadership_part(user: User, leave_request: LeaveRequest) -> bool:
+    leadership_records = _active_leadership_for_user_entity(
+        user,
+        leave_request.contract.legal_entity_id,
+    )
+    for leadership in leadership_records:
+        if user.id == leave_request.user_id and leadership.position == LeadershipPosition.deputy_principal:
+            continue
+        return True
+    return False
+
+
+def _apply_automatic_leave_approvals(leave_request: LeaveRequest) -> None:
+    applicant = leave_request.user
+    if applicant.privilege == UserPrivilege.ceo:
+        leave_request.ceo_approved_by_id = applicant.id
+    if _is_active_principal_for_entity(applicant, leave_request.contract.legal_entity_id):
+        leave_request.leadership_approved_by_id = applicant.id
+    if _leave_request_is_fully_approved(leave_request):
+        leave_request.status = LeaveRequestStatus.approved
+
+
+def _leave_request_is_fully_approved(leave_request: LeaveRequest) -> bool:
+    return bool(leave_request.ceo_approved_by_id and leave_request.leadership_approved_by_id)
+
+
+def _approve_leave_request(leave_request: LeaveRequest, approver: User) -> list[str]:
+    approved_parts = []
+    if leave_request.status != LeaveRequestStatus.pending_approval:
+        return approved_parts
+    if leave_request.ceo_approved_by_id is None and _can_approve_ceo_part(approver, leave_request):
+        leave_request.ceo_approved_by_id = approver.id
+        approved_parts.append("CEO")
+    if leave_request.leadership_approved_by_id is None and _can_approve_leadership_part(approver, leave_request):
+        leave_request.leadership_approved_by_id = approver.id
+        approved_parts.append("principal/deputy principal")
+    if _leave_request_is_fully_approved(leave_request):
+        leave_request.status = LeaveRequestStatus.approved
+        leave_request.decided_by_id = approver.id
+    return approved_parts
+
+
+def _pending_leave_requests_for_manager(user: User, limit: int | None = None) -> list[LeaveRequest]:
+    query = (
+        _leave_request_query_for_manager(user)
+        .filter(LeaveRequest.status == LeaveRequestStatus.pending_approval)
+        .order_by(LeaveRequest.start_date.asc(), LeaveRequest.id.asc())
+    )
+    actionable_requests = [
+        leave_request
+        for leave_request in query.all()
+        if (
+            leave_request.ceo_approved_by_id is None
+            and _can_approve_ceo_part(user, leave_request)
+        )
+        or (
+            leave_request.leadership_approved_by_id is None
+            and _can_approve_leadership_part(user, leave_request)
+        )
+    ]
+    if limit:
+        return actionable_requests[:limit]
+    return actionable_requests
+
+
 def _overlapping_leave_request(
     user_id: int,
     contract_id: int,
@@ -467,6 +596,10 @@ def privilege_assignment_required(view_func):
 
 
 def init_routes(app):
+    @app.context_processor
+    def inject_leave_management_access():
+        return {"can_manage_leaves_global": _can_manage_leaves(current_user)}
+
     @app.route("/")
     def index():
         if current_user.is_authenticated:
@@ -540,6 +673,10 @@ def init_routes(app):
             can_manage_user_profiles=_can_manage_privileges(current_user),
             can_manage_leadership=_can_manage_privileges(current_user),
             can_manage_leave_limits=_can_manage_privileges(current_user),
+            can_manage_leaves=_can_manage_leaves(current_user),
+            pending_leave_requests=_pending_leave_requests_for_manager(current_user, limit=6)
+            if _can_manage_leaves(current_user)
+            else [],
             profile_status_label=_profile_status_label(current_user.profile),
         )
 
@@ -639,8 +776,13 @@ def init_routes(app):
                 note=_normalize_optional_text(request.form.get("note")),
             )
             db.session.add(leave_request)
+            db.session.flush()
+            _apply_automatic_leave_approvals(leave_request)
             db.session.commit()
-            flash("Leave request submitted and marked as pending approval.", "success")
+            if leave_request.status == LeaveRequestStatus.approved:
+                flash("Leave request submitted and automatically approved.", "success")
+            else:
+                flash("Leave request submitted and marked as pending approval.", "success")
             return redirect(
                 url_for("leaves", contract_id=selected_contract.id, year=start_date.year, month=start_date.month)
             )
@@ -1033,6 +1175,121 @@ def init_routes(app):
             places_of_work=places,
             place_label_fn=_contract_place_label,
             mode="edit",
+        )
+
+
+    @app.route("/leaves/manage", methods=["GET", "POST"])
+    @login_required
+    def manage_leaves():
+        if not _can_manage_leaves(current_user):
+            abort(403)
+
+        selected_legal_entity_id = request.values.get("legal_entity_id", type=int)
+        selected_user_id = request.values.get("user_id", type=int)
+        selected_contract_id = request.values.get("contract_id", type=int)
+        selected_status = _normalize_optional_text(request.values.get("status"))
+
+        if request.method == "POST":
+            leave_request_id = request.form.get("leave_request_id", type=int)
+            action = request.form.get("action")
+            leave_request = _leave_request_query_for_manager(current_user).filter(LeaveRequest.id == leave_request_id).first()
+            if leave_request is None:
+                flash("Leave request not found or not available to you.", "error")
+                return redirect(url_for("manage_leaves"))
+
+            if action == "approve":
+                approved_parts = _approve_leave_request(leave_request, current_user)
+                if not approved_parts:
+                    flash("You cannot add another approval to this leave request.", "error")
+                elif leave_request.status == LeaveRequestStatus.approved:
+                    flash("Leave request fully approved.", "success")
+                else:
+                    flash(f"Recorded your {' and '.join(approved_parts)} approval; another approval is still required.", "success")
+            elif action == "reject":
+                if leave_request.status != LeaveRequestStatus.pending_approval:
+                    flash("Only pending leave requests can be rejected.", "error")
+                else:
+                    leave_request.status = LeaveRequestStatus.rejected
+                    leave_request.decided_by_id = current_user.id
+                    flash("Leave request rejected.", "success")
+            elif action == "cancel":
+                if leave_request.status in {LeaveRequestStatus.cancelled, LeaveRequestStatus.rejected}:
+                    flash("This leave request is already closed.", "error")
+                else:
+                    leave_request.status = LeaveRequestStatus.cancelled
+                    leave_request.decided_by_id = current_user.id
+                    flash("Leave request cancelled.", "success")
+            else:
+                flash("Invalid leave action.", "error")
+                return redirect(url_for("manage_leaves"))
+
+            db.session.commit()
+            return redirect(
+                url_for(
+                    "manage_leaves",
+                    legal_entity_id=selected_legal_entity_id,
+                    user_id=selected_user_id,
+                    contract_id=selected_contract_id,
+                    status=selected_status,
+                )
+            )
+
+        base_query = _leave_request_query_for_manager(current_user)
+        accessible_legal_entity_ids = _accessible_leave_legal_entity_ids(current_user)
+        legal_entities_query = LegalEntity.query
+        if accessible_legal_entity_ids is not None:
+            legal_entities_query = legal_entities_query.filter(LegalEntity.id.in_(accessible_legal_entity_ids))
+        legal_entities = legal_entities_query.order_by(LegalEntity.name.asc()).all()
+
+        users = (
+            User.query.join(Contract)
+            .join(LeaveRequest, LeaveRequest.contract_id == Contract.id)
+            .filter(LeaveRequest.id.in_(base_query.with_entities(LeaveRequest.id)))
+            .order_by(User.username.asc())
+            .distinct()
+            .all()
+        )
+        contracts = (
+            Contract.query.join(LeaveRequest)
+            .filter(LeaveRequest.id.in_(base_query.with_entities(LeaveRequest.id)))
+            .order_by(Contract.start_date.desc(), Contract.id.desc())
+            .all()
+        )
+
+        filtered_query = base_query
+        if selected_legal_entity_id:
+            filtered_query = filtered_query.filter(Contract.legal_entity_id == selected_legal_entity_id)
+        if selected_user_id:
+            filtered_query = filtered_query.filter(LeaveRequest.user_id == selected_user_id)
+        if selected_contract_id:
+            filtered_query = filtered_query.filter(LeaveRequest.contract_id == selected_contract_id)
+        if selected_status:
+            try:
+                filtered_query = filtered_query.filter(LeaveRequest.status == LeaveRequestStatus(selected_status))
+            except ValueError:
+                flash("Invalid status filter ignored.", "error")
+
+        leave_requests = (
+            filtered_query
+            .order_by(LeaveRequest.start_date.desc(), LeaveRequest.id.desc())
+            .all()
+        )
+
+        return render_template(
+            "manage_leaves.html",
+            legal_entities=legal_entities,
+            users=users,
+            contracts=contracts,
+            leave_requests=leave_requests,
+            statuses=LeaveRequestStatus,
+            selected_legal_entity_id=selected_legal_entity_id,
+            selected_user_id=selected_user_id,
+            selected_contract_id=selected_contract_id,
+            selected_status=selected_status,
+            can_approve_ceo_part=_can_approve_ceo_part,
+            can_approve_leadership_part=_can_approve_leadership_part,
+            leave_request_end_date=_leave_request_end_date,
+            user_display_name=_user_display_name,
         )
 
     @app.route("/leave-limits", methods=["GET", "POST"])

@@ -65,9 +65,44 @@
         <a class="button button-primary" href="{{ url_for('leaves') }}">Open leave calendar</a>
       </div>
       <div class="empty-state">
-        New leave requests are created with pending approval status. HR approval handling will be managed separately.
+        Leave requests are approved by both a CEO user and an active principal or deputy principal for the contract's legal entity.
       </div>
     </section>
+
+    {% if can_manage_leaves %}
+    <section class="card span-12">
+      <div class="section-heading">
+        <div>
+          <h2>Pending leave approvals</h2>
+          <p>Review requests that are waiting for your CEO or principal/deputy principal approval.</p>
+        </div>
+        <a class="button button-secondary" href="{{ url_for('manage_leaves') }}">Open leave manager</a>
+      </div>
+
+      {% if pending_leave_requests %}
+      <div class="record-list">
+        {% for leave_request in pending_leave_requests %}
+        <article class="record-item">
+          <div class="record-item-header">
+            <div>
+              <h3>{{ leave_request.user.profile.full_name if leave_request.user.profile and leave_request.user.profile.full_name else leave_request.user.username }}</h3>
+              <p>{{ leave_request.contract.employer.name }} · {{ leave_request.category.value|capitalize }} · {{ leave_request.start_date }}{% if leave_request.end_date %} → {{ leave_request.end_date }}{% endif %}</p>
+            </div>
+            <span class="pill">{{ leave_request.status.value|capitalize }}</span>
+          </div>
+          <form method="post" action="{{ url_for('manage_leaves') }}" class="inline-form">
+            <input type="hidden" name="leave_request_id" value="{{ leave_request.id }}">
+            <button type="submit" name="action" value="approve">Approve</button>
+            <button type="submit" name="action" value="reject" class="button-secondary">Reject</button>
+          </form>
+        </article>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state">No pending leave requests currently require your review.</div>
+      {% endif %}
+    </section>
+    {% endif %}
     <section class="card span-7">
       <div class="section-heading">
         <div>
