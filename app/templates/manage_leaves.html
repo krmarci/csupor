@@ -1,38 +1,38 @@
 {% extends "base.html" %}
-{% block title %}Leave management · CSUPOR Portal{% endblock %}
+{% block title %}{{ _('Leave management · CSUPOR Portal') }}{% endblock %}
 {% block content %}
 <section class="form-shell">
   <div class="section-heading">
     <div>
-      <span class="eyebrow">Leave governance</span>
-      <h2>Manage leave requests</h2>
-      <p>Filter by legal entity, employee, contract, and status, then approve, reject, or cancel requests directly.</p>
+      <span class="eyebrow">{{ _('Leave governance') }}</span>
+      <h2>{{ _('Manage leave requests') }}</h2>
+      <p>{{ _('Filter by legal entity, employee, contract, and status, then approve, reject, or cancel requests directly.') }}</p>
     </div>
   </div>
 
   <form method="get" class="form-grid">
     <div class="field">
-      <label for="legal_entity_id">Legal entity</label>
+      <label for="legal_entity_id">{{ _('Legal entity') }}</label>
       <select id="legal_entity_id" name="legal_entity_id">
-        <option value="">All legal entities</option>
+        <option value="">{{ _('All legal entities') }}</option>
         {% for entity in legal_entities %}
         <option value="{{ entity.id }}" {% if selected_legal_entity_id == entity.id %}selected{% endif %}>{{ entity.name }}</option>
         {% endfor %}
       </select>
     </div>
     <div class="field">
-      <label for="user_id">Employee</label>
+      <label for="user_id">{{ _('Employee') }}</label>
       <select id="user_id" name="user_id">
-        <option value="">All employees</option>
+        <option value="">{{ _('All employees') }}</option>
         {% for user in users %}
         <option value="{{ user.id }}" {% if selected_user_id == user.id %}selected{% endif %}>{{ user_display_name(user) }}</option>
         {% endfor %}
       </select>
     </div>
     <div class="field">
-      <label for="contract_id">Contract</label>
+      <label for="contract_id">{{ _('Contract') }}</label>
       <select id="contract_id" name="contract_id">
-        <option value="">All contracts</option>
+        <option value="">{{ _('All contracts') }}</option>
         {% for contract in contracts %}
         <option value="{{ contract.id }}" {% if selected_contract_id == contract.id %}selected{% endif %}>
           {{ user_display_name(contract.user) }} · {{ contract.employer.name }} · {{ contract.start_date }} → {{ contract.end_date or 'ongoing' }}
@@ -41,9 +41,9 @@
       </select>
     </div>
     <div class="field">
-      <label for="status">Status</label>
+      <label for="status">{{ _('Status') }}</label>
       <select id="status" name="status">
-        <option value="">All statuses</option>
+        <option value="">{{ _('All statuses') }}</option>
         {% for status in statuses %}
         <option value="{{ status.value }}" {% if selected_status == status.value %}selected{% endif %}>{{ status.value|capitalize }}</option>
         {% endfor %}
@@ -51,8 +51,8 @@
     </div>
     <div class="field field-full">
       <div class="button-row">
-        <button type="submit">Apply filters</button>
-        <a class="button button-secondary" href="{{ url_for('manage_leaves') }}">Reset</a>
+        <button type="submit">{{ _('Apply filters') }}</button>
+        <a class="button button-secondary" href="{{ url_for('manage_leaves') }}">{{ _('Reset') }}</a>
       </div>
     </div>
   </form>
@@ -61,8 +61,8 @@
 <section class="table-card layout-stack">
   <div class="section-heading">
     <div>
-      <h2>Leave requests</h2>
-      <p>CEO and legal-entity principal approvals are tracked separately. A single approver with both roles can satisfy both requirements.</p>
+      <h2>{{ _('Leave requests') }}</h2>
+      <p>{{ _('CEO and legal-entity principal approvals are tracked separately. A single approver with both roles can satisfy both requirements.') }}</p>
     </div>
   </div>
 
@@ -71,12 +71,12 @@
     <table>
       <thead>
         <tr>
-          <th>Employee</th>
-          <th>Leave</th>
-          <th>Status</th>
-          <th>Max workplace leaves</th>
-          <th>Approvals</th>
-          <th>Actions</th>
+          <th>{{ _('Employee') }}</th>
+          <th>{{ _('Leave') }}</th>
+          <th>{{ _('Status') }}</th>
+          <th>{{ _('Max workplace leaves') }}</th>
+          <th>{{ _('Approvals') }}</th>
+          <th>{{ _('Actions') }}</th>
         </tr>
       </thead>
       <tbody>
@@ -97,7 +97,7 @@
           </td>
           <td>
             <strong>{{ workplace_leave_counts[leave_request.id] }}</strong>
-            <div class="muted">same workplace</div>
+            <div class="muted">{{ _('same workplace') }}</div>
           </td>
           <td>
             <div class="approval-stack">
@@ -115,15 +115,15 @@
               {% set can_add_ceo = leave_request.ceo_approved_by_id is none and can_approve_ceo_part(current_user, leave_request) %}
               {% set can_add_leadership = leave_request.leadership_approved_by_id is none and can_approve_leadership_part(current_user, leave_request) %}
               {% if leave_request.status.value == 'pending approval' %}
-              <button type="submit" name="action" value="approve" {% if not (can_add_ceo or can_add_leadership) %}disabled{% endif %}>Approve</button>
-              <button type="submit" name="action" value="reject" class="button-secondary">Reject</button>
+              <button type="submit" name="action" value="approve" {% if not (can_add_ceo or can_add_leadership) %}disabled{% endif %}>{{ _('Approve') }}</button>
+              <button type="submit" name="action" value="reject" class="button-secondary">{{ _('Reject') }}</button>
               {% elif leave_request.status.value == 'approved' %}
-              <button type="submit" name="action" value="cancel" class="button-secondary">Cancel</button>
+              <button type="submit" name="action" value="cancel" class="button-secondary">{{ _("Cancel") }}</button>
               {% elif leave_request.status.value == 'pending cancellation' %}
-              <button type="submit" name="action" value="cancel" class="button-secondary">Cancel</button>
-              <button type="submit" name="action" value="reject" class="button-secondary">Reject</button>
+              <button type="submit" name="action" value="cancel" class="button-secondary">{{ _("Cancel") }}</button>
+              <button type="submit" name="action" value="reject" class="button-secondary">{{ _('Reject') }}</button>
               {% else %}
-              <span class="muted">No actions available</span>
+              <span class="muted">{{ _('No actions available') }}</span>
               {% endif %}
             </form>
           </td>
@@ -133,7 +133,7 @@
     </table>
   </div>
   {% else %}
-  <div class="empty-state">No leave requests match the selected filters.</div>
+  <div class="empty-state">{{ _('No leave requests match the selected filters.') }}</div>
   {% endif %}
 </section>
 
