@@ -1,64 +1,64 @@
 {% extends "base.html" %}
-{% block title %}Add Dependent · CSUPOR Portal{% endblock %}
+{% block title %}{{ _('Add Dependent · CSUPOR Portal') }}{% endblock %}
 {% block content %}
 <section class="form-page">
   <aside class="form-sidebar">
-    <span class="eyebrow">Family records</span>
-    <h2>Add a dependent record.</h2>
+    <span class="eyebrow">{{ _("Family records") }}</span>
+    <h2>{{ _("Add a dependent record.") }}</h2>
     <p>
       Capture dependent information in a guided, modern form so benefits-related data remains complete and accessible.
     </p>
     <ul>
-      <li>Include all children here, including adult children.</li>
-      <li>Choose whether this dependent is a child or another dependent type.</li>
-      <li>Enter the social security number using exactly nine digits.</li>
-      <li>Use the dependency start date that matches your official records.</li>
-      <li>Optional disability information can be added for context.</li>
+      <li>{{ _("Include all children here, including adult children.") }}</li>
+      <li>{{ _("Choose whether this dependent is a child or another dependent type.") }}</li>
+      <li>{{ _("Enter the social security number using exactly nine digits.") }}</li>
+      <li>{{ _("Use the dependency start date that matches your official records.") }}</li>
+      <li>{{ _("Optional disability information can be added for context.") }}</li>
     </ul>
   </aside>
 
   <section class="form-shell">
     <div class="section-heading">
       <div>
-        <h2>Add dependent</h2>
-        <p>Create a new dependent entry for your employee record.</p>
+        <h2>{{ _('Add dependent') }}</h2>
+        <p>{{ _("Create a new dependent entry for your employee record.") }}</p>
       </div>
     </div>
     <form method="post">
       <div class="form-grid">
         <div class="field field-full">
-          <label for="name">Name</label>
-          <input id="name" name="name" required placeholder="Dependent full name">
+          <label for="name">{{ _('Name') }}</label>
+          <input id="name" name="name" required placeholder="{{ _('Dependent full name') }}">
         </div>
         <div class="field">
-          <label for="dependent_type">Dependent type</label>
+          <label for="dependent_type">{{ _("Dependent type") }}</label>
           <select id="dependent_type" name="dependent_type" required>
-            <option value="">Select dependent type</option>
+            <option value="">{{ _("Select dependent type") }}</option>
             {% for dependent_type in dependent_types %}
             <option value="{{ dependent_type.value }}">{{ dependent_type.value }}</option>
             {% endfor %}
           </select>
         </div>
         <div class="field">
-          <label for="date_of_birth">Date of birth</label>
+          <label for="date_of_birth">{{ _('Date of birth') }}</label>
           <input id="date_of_birth" type="date" name="date_of_birth" required>
         </div>
         <div class="field">
-          <label for="social_security_number">Social security number (9 digits)</label>
+          <label for="social_security_number">{{ _("Social security number (9 digits)") }}</label>
           <input id="social_security_number" name="social_security_number" required>
         </div>
         <div class="field">
-          <label for="dependency_start">Start of dependency</label>
+          <label for="dependency_start">{{ _("Start of dependency") }}</label>
           <input id="dependency_start" type="date" name="dependency_start" required>
         </div>
         <div class="field">
-          <label for="disability">Disability</label>
-          <input id="disability" name="disability" placeholder="Optional note">
+          <label for="disability">{{ _('Disability') }}</label>
+          <input id="disability" name="disability" placeholder="{{ _('Optional note') }}">
         </div>
       </div>
       <div class="button-row">
-        <button type="submit">Save dependent</button>
-        <a class="button button-secondary" href="{{ url_for('dashboard') }}">Back to dashboard</a>
+        <button type="submit">{{ _("Save dependent") }}</button>
+        <a class="button button-secondary" href="{{ url_for('dashboard') }}">{{ _("Back to dashboard") }}</a>
       </div>
     </form>
   </section>

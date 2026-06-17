@@ -1,44 +1,44 @@
 {% extends "base.html" %}
-{% block title %}Register · CSUPOR Portal{% endblock %}
+{% block title %}{{ _('Register · CSUPOR Portal') }}{% endblock %}
 {% block content %}
 <section class="auth-shell">
   <div class="auth-grid">
     <aside class="auth-panel">
-      <span class="eyebrow">Get started</span>
-      <h1>Create your portal account.</h1>
+      <span class="eyebrow">{{ _('Get started') }}</span>
+      <h1>{{ _('Create your portal account.') }}</h1>
       <p>
-        New users join with the default <strong>employee</strong> privilege. HR or the CEO can later update access based on organizational needs.
+        {{ _('New users join with the default') }} <strong>{{ _('employee') }}</strong> {{ _('privilege. HR or the CEO can later update access based on organizational needs.') }}
       </p>
       <ul>
-        <li>Start with a secure account and complete your profile afterward.</li>
-        <li>Keep qualifications, dependents, and certification history organized.</li>
-        <li>Enjoy a more modern and approachable onboarding flow.</li>
+        <li>{{ _('Start with a secure account and complete your profile afterward.') }}</li>
+        <li>{{ _('Keep qualifications, dependents, and certification history organized.') }}</li>
+        <li>{{ _('Enjoy a more modern and approachable onboarding flow.') }}</li>
       </ul>
     </aside>
 
     <section class="auth-form">
       <div class="section-heading">
         <div>
-          <h2>Registration</h2>
-          <p>Set up your account credentials to access the employee portal.</p>
+          <h2>{{ _('Registration') }}</h2>
+          <p>{{ _('Set up your account credentials to access the employee portal.') }}</p>
         </div>
       </div>
       <form method="post">
         <div class="field field-full">
-          <label for="email">E-mail</label>
-          <input id="email" type="email" name="email" required placeholder="name@example.com">
+          <label for="email">{{ _('E-mail') }}</label>
+          <input id="email" type="email" name="email" required placeholder="{{ _('name@example.com') }}">
         </div>
         <div class="field field-full">
-          <label for="username">Username</label>
-          <input id="username" name="username" required placeholder="Choose a username">
+          <label for="username">{{ _('Username') }}</label>
+          <input id="username" name="username" required placeholder="{{ _('Choose a username') }}">
         </div>
         <div class="field field-full">
-          <label for="password">Password</label>
-          <input id="password" type="password" name="password" required placeholder="Create a strong password">
+          <label for="password">{{ _("Password") }}</label>
+          <input id="password" type="password" name="password" required placeholder="{{ _('Create a strong password') }}">
         </div>
         <div class="button-row">
-          <button type="submit">Register</button>
-          <a class="button button-secondary" href="{{ url_for('login') }}">Back to login</a>
+          <button type="submit">{{ _('Register') }}</button>
+          <a class="button button-secondary" href="{{ url_for('login') }}">{{ _('Back to login') }}</a>
         </div>
       </form>
     </section>

@@ -1,19 +1,19 @@
 {% extends "base.html" %}
-{% block title %}Leave limits · CSUPOR Portal{% endblock %}
+{% block title %}{{ _('Leave limits · CSUPOR Portal') }}{% endblock %}
 {% block content %}
 <section class="dashboard-grid">
   <section class="form-shell span-12">
     <div class="section-heading">
       <div>
-        <h2>Assign leave limits to active contracts</h2>
-        <p>Select employee, contract, and calendar year before entering leave limits.</p>
+        <h2>{{ _('Assign leave limits to active contracts') }}</h2>
+        <p>{{ _('Select employee, contract, and calendar year before entering leave limits.') }}</p>
       </div>
     </div>
 
     <form method="get" class="grid-form">
-      <label for="user_id">Employee *</label>
+      <label for="user_id">{{ _('Employee *') }}</label>
       <select id="user_id" name="user_id" required>
-        <option value="">Select employee</option>
+        <option value="">{{ _('Select employee') }}</option>
         {% for user in users %}
         <option value="{{ user.id }}" {% if selected_user and selected_user.id == user.id %}selected{% endif %}>
           {{ user.profile.full_name if user.profile and user.profile.full_name else user.username }}
@@ -21,9 +21,9 @@
         {% endfor %}
       </select>
 
-      <label for="contract_id">Contract *</label>
+      <label for="contract_id">{{ _('Contract *') }}</label>
       <select id="contract_id" name="contract_id" {% if not selected_user %}disabled{% endif %}>
-        <option value="">Select contract</option>
+        <option value="">{{ _('Select contract') }}</option>
         {% for contract in all_contracts %}
         <option
           value="{{ contract.id }}"
@@ -35,14 +35,14 @@
         {% endfor %}
       </select>
       {% if not selected_user %}
-      <small class="help-text">Select an employee first to load available contracts.</small>
+      <small class="help-text">{{ _('Select an employee first to load available contracts.') }}</small>
       {% endif %}
 
-      <label for="calendar_year">Calendar year *</label>
+      <label for="calendar_year">{{ _('Calendar year *') }}</label>
       <input id="calendar_year" name="calendar_year" type="number" min="1970" max="2100" value="{{ selected_year }}" required>
 
       <div class="button-row">
-        <button type="submit">Load leave categories</button>
+        <button type="submit">{{ _('Load leave categories') }}</button>
       </div>
     </form>
   </section>
@@ -55,7 +55,7 @@
         <p>
           Contract: {{ contract_display_name(selected_contract) }}
           {% if not is_contract_active_in_year(selected_contract, selected_year) %}
-          <strong>· Not active in selected year</strong>
+          <strong>{{ _('· Not active in selected year') }}</strong>
           {% endif %}
         </p>
       </div>
@@ -67,14 +67,14 @@
       <input type="hidden" name="contract_id" value="{{ selected_contract.id }}">
       <input type="hidden" name="calendar_year" value="{{ selected_year }}">
 
-      <h3>Calendar year bounded categories</h3>
+      <h3>{{ _('Calendar year bounded categories') }}</h3>
       <div class="table-wrap">
         <table class="leave-limits-table leave-limits-table-calendar">
           <thead>
             <tr>
-              <th class="leave-category-column">Leave category</th>
-              <th>Limit (days)</th>
-              <th>Bounded period</th>
+              <th class="leave-category-column">{{ _('Leave category') }}</th>
+              <th>{{ _('Limit (days)') }}</th>
+              <th>{{ _('Bounded period') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -99,17 +99,17 @@
         </table>
       </div>
 
-      <h3>Categories with custom start/end date</h3>
+      <h3>{{ _('Categories with custom start/end date') }}</h3>
       <p class="help-text">Use “Add another” when one employee has multiple eligible instances of the same category in {{ selected_year }}.</p>
       <div class="table-wrap">
         <table class="leave-limits-table leave-limits-table-range">
           <thead>
             <tr>
-              <th class="leave-category-column">Leave category</th>
-              <th>Limit (days)</th>
-              <th>Start date</th>
-              <th>End date</th>
-              <th>Actions</th>
+              <th class="leave-category-column">{{ _('Leave category') }}</th>
+              <th>{{ _('Limit (days)') }}</th>
+              <th>{{ _('Start date') }}</th>
+              <th>{{ _("End date") }}</th>
+              <th>{{ _('Actions') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -132,7 +132,7 @@
                     <input type="date" name="range_period_end" value="{{ existing.period_end if existing.period_end else '' }}">
                   </td>
                   <td>
-                    <button type="button" class="button-secondary remove-range-row">Remove</button>
+                    <button type="button" class="button-secondary remove-range-row">{{ _('Remove') }}</button>
                   </td>
                 </tr>
                 {% endfor %}
@@ -156,7 +156,7 @@
                       class="button-secondary add-range-row"
                       data-leave-type-name="{{ leave_type.name }}"
                       data-leave-type-label="{{ leave_type.value|capitalize }}"
-                    >Add another</button>
+                    >{{ _('Add another') }}</button>
                   </td>
                 </tr>
               {% endif %}
@@ -165,7 +165,7 @@
         </table>
       </div>
 
-      <h3>Categories without assigned limit</h3>
+      <h3>{{ _('Categories without assigned limit') }}</h3>
       <ul>
         {% for leave_name in leave_types_without_limit %}
         <li>{{ leave_name|capitalize }}</li>
@@ -173,7 +173,7 @@
       </ul>
 
       <div class="button-row">
-        <button type="submit">Save leave limits</button>
+        <button type="submit">{{ _('Save leave limits') }}</button>
       </div>
     </form>
     {% else %}
@@ -283,7 +283,7 @@
         <td><input type="number" min="0" name="range_limit_days" value=""></td>
         <td><input type="date" name="range_period_start" value=""></td>
         <td><input type="date" name="range_period_end" value=""></td>
-        <td><button type="button" class="button-secondary remove-range-row">Remove</button></td>
+        <td><button type="button" class="button-secondary remove-range-row">{{ _('Remove') }}</button></td>
       `;
       return row;
     };

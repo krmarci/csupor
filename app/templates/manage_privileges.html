@@ -1,20 +1,20 @@
 {% extends "base.html" %}
-{% block title %}Manage Privileges · CSUPOR Portal{% endblock %}
+{% block title %}{{ _('Manage Privileges · CSUPOR Portal') }}{% endblock %}
 {% block content %}
 <section class="hero">
   <div class="hero-copy">
-    <span class="eyebrow">Administrative controls</span>
-    <h1>Manage user privileges with confidence.</h1>
+    <span class="eyebrow">{{ _('Administrative controls') }}</span>
+    <h1>{{ _('Manage user privileges with confidence.') }}</h1>
     <p>
       Review registered users and assign supported privileges through a streamlined interface built for HR and executive workflows.
     </p>
   </div>
   <aside class="hero-panel">
-    <span class="badge">Access rules</span>
+    <span class="badge">{{ _('Access rules') }}</span>
     <ul>
-      <li>Users with the <strong>hr</strong>, <strong>ceo</strong>, or <strong>developer</strong> privilege can access this page.</li>
-      <li>Changes take effect as soon as the new privilege is saved.</li>
-      <li>Use this page after registration to elevate or revise user access.</li>
+      <li>{{ _('Users with the') }} <strong>{{ _('hr') }}</strong>, <strong>{{ _('ceo') }}</strong>, {{ _('or') }} <strong>{{ _('developer') }}</strong> {{ _('privilege can access this page.') }}</li>
+      <li>{{ _('Changes take effect as soon as the new privilege is saved.') }}</li>
+      <li>{{ _('Use this page after registration to elevate or revise user access.') }}</li>
     </ul>
   </aside>
 </section>
@@ -23,19 +23,19 @@
   <section class="table-card">
     <div class="section-heading">
       <div>
-        <h2>User privilege management</h2>
-        <p>Assign employee, HR, CEO, or developer access from a modernized table layout.</p>
+        <h2>{{ _('User privilege management') }}</h2>
+        <p>{{ _('Assign employee, HR, CEO, or developer access from a modernized table layout.') }}</p>
       </div>
     </div>
     <div class="table-wrap">
       <table>
         <thead>
           <tr>
-            <th>User ID</th>
-            <th>Username</th>
-            <th>E-mail</th>
-            <th>Current privilege</th>
-            <th>Assign privilege</th>
+            <th>{{ _('User ID') }}</th>
+            <th>{{ _('Username') }}</th>
+            <th>{{ _('E-mail') }}</th>
+            <th>{{ _('Current privilege') }}</th>
+            <th>{{ _('Assign privilege') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -53,7 +53,7 @@
                   <option value="{{ privilege.value }}" {% if user.privilege == privilege %}selected{% endif %}>{{ privilege.value }}</option>
                   {% endfor %}
                 </select>
-                <button type="submit">Save</button>
+                <button type="submit">{{ _('Save') }}</button>
               </form>
             </td>
           </tr>

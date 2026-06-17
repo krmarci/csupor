@@ -1,45 +1,45 @@
 {% extends "base.html" %}
-{% block title %}Professional Exam · CSUPOR Portal{% endblock %}
+{% block title %}{{ _('Professional Exam · CSUPOR Portal') }}{% endblock %}
 {% block content %}
 <section class="form-page">
   <aside class="form-sidebar">
-    <span class="eyebrow">Certification record</span>
-    <h2>Manage your professional exam details.</h2>
+    <span class="eyebrow">{{ _('Certification record') }}</span>
+    <h2>{{ _('Manage your professional exam details.') }}</h2>
     <p>
       Maintain teaching or professional exam information in a dedicated form with a calmer, easier-to-read presentation.
     </p>
     <ul>
-      <li>Leave all fields empty and submit to remove the current record.</li>
-      <li>Use a valid year that reflects the official exam completion date.</li>
-      <li>Keep the degree number aligned with your documentation.</li>
+      <li>{{ _('Leave all fields empty and submit to remove the current record.') }}</li>
+      <li>{{ _('Use a valid year that reflects the official exam completion date.') }}</li>
+      <li>{{ _('Keep the degree number aligned with your documentation.') }}</li>
     </ul>
   </aside>
 
   <section class="form-shell">
     <div class="section-heading">
       <div>
-        <h2>Teacher professional exam</h2>
-        <p>Update your certification details or clear the record by submitting blank values.</p>
+        <h2>{{ _('Teacher professional exam') }}</h2>
+        <p>{{ _('Update your certification details or clear the record by submitting blank values.') }}</p>
       </div>
     </div>
     <form method="post">
       <div class="form-grid">
         <div class="field field-full">
-          <label for="qualification_name">Name of qualification</label>
+          <label for="qualification_name">{{ _('Name of qualification') }}</label>
           <input id="qualification_name" name="qualification_name" value="{{ exam.qualification_name or '' }}">
         </div>
         <div class="field">
-          <label for="year_obtained">Year obtained</label>
+          <label for="year_obtained">{{ _('Year obtained') }}</label>
           <input id="year_obtained" type="number" name="year_obtained" value="{{ exam.year_obtained or '' }}">
         </div>
         <div class="field">
-          <label for="degree_number">Degree number</label>
+          <label for="degree_number">{{ _('Degree number') }}</label>
           <input id="degree_number" name="degree_number" value="{{ exam.degree_number or '' }}">
         </div>
       </div>
       <div class="button-row">
-        <button type="submit">Save professional exam</button>
-        <a class="button button-secondary" href="{{ url_for('dashboard') }}">Back to dashboard</a>
+        <button type="submit">{{ _('Save professional exam') }}</button>
+        <a class="button button-secondary" href="{{ url_for('dashboard') }}">{{ _("Back to dashboard") }}</a>
       </div>
     </form>
   </section>

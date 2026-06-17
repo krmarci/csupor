@@ -1,20 +1,20 @@
 {% extends "base.html" %}
-{% block title %}Leave calendar · CSUPOR Portal{% endblock %}
+{% block title %}{{ _('Leave calendar · CSUPOR Portal') }}{% endblock %}
 {% block content %}
 <section class="leave-hero">
   <div>
-    <span class="eyebrow">Leave planning</span>
-    <h1>Plan time away with confidence.</h1>
-    <p>Select an active contract, review your leave calendar instantly, and submit a request that starts in pending approval.</p>
+    <span class="eyebrow">{{ _("Leave planning") }}</span>
+    <h1>{{ _("Plan time away with confidence.") }}</h1>
+    <p>{{ _("Select an active contract, review your leave calendar instantly, and submit a request that starts in pending approval.") }}</p>
   </div>
   <div class="leave-status-panel">
-    <strong>Request statuses</strong>
+    <strong>{{ _("Request statuses") }}</strong>
     <div class="status-cloud">
-      <span class="status-pill status-pending-approval">Pending approval</span>
-      <span class="status-pill status-approved">Approved</span>
-      <span class="status-pill status-rejected">Rejected</span>
-      <span class="status-pill status-pending-cancellation">Pending cancellation</span>
-      <span class="status-pill status-cancelled">Cancelled</span>
+      <span class="status-pill status-pending-approval">{{ _("Pending approval") }}</span>
+      <span class="status-pill status-approved">{{ _("Approved") }}</span>
+      <span class="status-pill status-rejected">{{ _("Rejected") }}</span>
+      <span class="status-pill status-pending-cancellation">{{ _("Pending cancellation") }}</span>
+      <span class="status-pill status-cancelled">{{ _("Cancelled") }}</span>
     </div>
   </div>
 </section>
@@ -23,7 +23,7 @@
 <section class="leave-workspace dashboard-grid">
   <aside class="leave-sidebar span-5">
     <form id="contract-picker" method="get" class="leave-card contract-picker-card">
-      <label for="contract_id">Assign leaves to contract</label>
+      <label for="contract_id">{{ _("Assign leaves to contract") }}</label>
       <select id="contract_id" name="contract_id" onchange="this.form.submit()">
         {% for contract in active_contracts %}
         <option value="{{ contract.id }}" {% if selected_contract and selected_contract.id == contract.id %}selected{% endif %}>
@@ -33,7 +33,7 @@
       </select>
       <input type="hidden" name="year" value="{{ selected_year }}">
       <input type="hidden" name="month" value="{{ selected_month }}">
-      <small class="help-text">Your current active contract is selected by default. The calendar refreshes immediately when you choose another active contract.</small>
+      <small class="help-text">{{ _("Your current active contract is selected by default. The calendar refreshes immediately when you choose another active contract.") }}</small>
     </form>
 
     <form method="post" class="leave-card leave-request-form">
@@ -42,12 +42,12 @@
       <input type="hidden" name="month" value="{{ selected_month }}">
       <div class="section-heading compact-heading">
         <div>
-          <h2>Apply for leave</h2>
-          <p>New submissions are saved as pending approval.</p>
+          <h2>{{ _("Apply for leave") }}</h2>
+          <p>{{ _("New submissions are saved as pending approval.") }}</p>
         </div>
       </div>
 
-      <label for="category">Leave type *</label>
+      <label for="category">{{ _("Leave type *") }}</label>
       <select id="category" name="category" required>
         {% for item in available_categories %}
         <option value="{{ item.category.value }}" data-end-required="{{ 'true' if item.end_required else 'false' }}">
@@ -63,21 +63,21 @@
 
       <div class="date-pair" id="leave-date-fields">
         <div>
-          <label for="start_date">Start date *</label>
+          <label for="start_date">{{ _("Start date *") }}</label>
           <input id="start_date" name="start_date" type="date" required>
         </div>
         <div>
-          <label for="end_date">End date <span id="end-date-required-label">*</span></label>
+          <label for="end_date">{{ _("End date") }} <span id="end-date-required-label">*</span></label>
           <input id="end_date" name="end_date" type="date">
-          <small id="end-date-help" class="help-text">Required for paid leave. Optional for all other leave types.</small>
+          <small id="end-date-help" class="help-text">{{ _("Required for paid leave. Optional for all other leave types.") }}</small>
         </div>
       </div>
-      <small id="calendar-selection-help" class="help-text">Tip: click a day in the calendar to choose the start date, then click another day to choose the end date.</small>
+      <small id="calendar-selection-help" class="help-text">{{ _("Tip: click a day in the calendar to choose the start date, then click another day to choose the end date.") }}</small>
 
-      <label for="note">Note</label>
-      <textarea id="note" name="note" placeholder="Add context for HR, if needed."></textarea>
+      <label for="note">{{ _("Note") }}</label>
+      <textarea id="note" name="note" placeholder="{{ _('Add context for HR, if needed.') }}"></textarea>
 
-      <button type="submit" name="action" value="submit">Submit request</button>
+      <button type="submit" name="action" value="submit">{{ _("Submit request") }}</button>
     </form>
   </aside>
 
@@ -92,7 +92,7 @@
     </div>
 
     <div class="calendar-grid weekday-grid">
-      <div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div><div>Sun</div>
+      <div>{{ _('Mon') }}</div><div>{{ _('Tue') }}</div><div>{{ _('Wed') }}</div><div>{{ _('Thu') }}</div><div>{{ _('Fri') }}</div><div>{{ _('Sat') }}</div><div>{{ _('Sun') }}</div>
     </div>
     <div class="calendar-grid day-grid">
       {% for day in calendar_days %}
@@ -101,7 +101,7 @@
         type="button"
         class="calendar-day calendar-day-button"
         data-calendar-date="{{ day.isoformat() }}"
-        aria-label="Select {{ day.strftime('%B') }} {{ day.day }}, {{ day.year }} as a leave date"
+        aria-label="{{ _("Select {{ day.strftime('%B') }} {{ day.day }}, {{ day.year }} as a leave date") }}"
       >
         <time datetime="{{ day.isoformat() }}">{{ day.day }}</time>
         {% for leave_request in month_requests %}
@@ -119,7 +119,7 @@
     </div>
 
     <div class="request-list">
-      <h3>This month</h3>
+      <h3>{{ _("This month") }}</h3>
       {% if month_requests %}
       {% for leave_request in month_requests %}
       <article class="request-item">
@@ -136,7 +136,7 @@
             <input type="hidden" name="contract_id" value="{{ selected_contract.id }}">
             <input type="hidden" name="year" value="{{ selected_year }}">
             <input type="hidden" name="month" value="{{ selected_month }}">
-            <button type="submit" class="button-secondary">Cancel</button>
+            <button type="submit" class="button-secondary">{{ _("Cancel") }}</button>
           </form>
           {% elif leave_request.status.value == 'pending cancellation' %}
           <form method="post" class="inline-form">
@@ -145,14 +145,14 @@
             <input type="hidden" name="contract_id" value="{{ selected_contract.id }}">
             <input type="hidden" name="year" value="{{ selected_year }}">
             <input type="hidden" name="month" value="{{ selected_month }}">
-            <button type="submit" class="button-secondary">Undo</button>
+            <button type="submit" class="button-secondary">{{ _("Undo") }}</button>
           </form>
           {% endif %}
         </div>
       </article>
       {% endfor %}
       {% else %}
-      <div class="empty-state">No leave requests are scheduled for this month yet.</div>
+      <div class="empty-state">{{ _("No leave requests are scheduled for this month yet.") }}</div>
       {% endif %}
     </div>
   </section>
@@ -161,8 +161,8 @@
 <section class="form-shell">
   <div class="section-heading">
     <div>
-      <h2>No active contract found</h2>
-      <p>You can apply for leave once HR records an active contract for your account.</p>
+      <h2>{{ _("No active contract found") }}</h2>
+      <p>{{ _("You can apply for leave once HR records an active contract for your account.") }}</p>
     </div>
   </div>
 </section>
