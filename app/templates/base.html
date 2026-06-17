@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ current_locale }}">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>{% block title %}CSUPOR User System{% endblock %}</title>
+    <title>{% block title %}{{ _("CSUPOR User System") }}{% endblock %}</title>
     <style>
       :root {
         color-scheme: light;
@@ -651,6 +651,32 @@
         min-width: 140px;
       }
 
+      .language-form {
+        display: flex;
+        align-items: center;
+      }
+
+      .language-form select {
+        min-width: 112px;
+        padding: 10px 34px 10px 14px;
+        border-radius: 999px;
+        color: rgba(226, 232, 240, 0.92);
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.16);
+      }
+
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
       @media (max-width: 960px) {
         .hero,
         .form-page,
@@ -719,41 +745,50 @@
         <a class="brand" href="{{ url_for('dashboard' if current_user.is_authenticated else 'login') }}">
           <span class="brand-mark">C</span>
           <span class="brand-copy">
-            <strong>CSUPOR Portal</strong>
-            <small>Modern employee records and profile management</small>
+            <strong>{{ _("CSUPOR Portal") }}</strong>
+            <small>{{ _("Modern employee records and profile management") }}</small>
           </span>
         </a>
 
         <div class="nav-links">
           {% if current_user.is_authenticated %}
-          <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">Dashboard</a>
-          <a class="nav-link {% if request.endpoint == 'leaves' %}active{% endif %}" href="{{ url_for('leaves') }}">Leave calendar</a>
-          <a class="nav-link {% if request.endpoint == 'edit_profile' %}active{% endif %}" href="{{ url_for('edit_profile') }}">Edit profile</a>
-          <a class="nav-link {% if request.endpoint == 'change_password' %}active{% endif %}" href="{{ url_for('change_password') }}">Change password</a>
+          <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">{{ _("Dashboard") }}</a>
+          <a class="nav-link {% if request.endpoint == 'leaves' %}active{% endif %}" href="{{ url_for('leaves') }}">{{ _("Leave calendar") }}</a>
+          <a class="nav-link {% if request.endpoint == 'edit_profile' %}active{% endif %}" href="{{ url_for('edit_profile') }}">{{ _("Edit profile") }}</a>
+          <a class="nav-link {% if request.endpoint == 'change_password' %}active{% endif %}" href="{{ url_for('change_password') }}">{{ _("Change password") }}</a>
           {% if current_user.privilege.value in ['hr', 'ceo'] or can_manage_leaves_global %}
           <details class="nav-group">
             <summary
               class="nav-link {% if request.endpoint in ['manage_user_profiles', 'edit_user_profile', 'manage_privileges', 'manage_contracts', 'create_contract', 'edit_contract', 'manage_legal_entities', 'manage_places_of_work', 'manage_leadership', 'manage_leave_limits', 'manage_leaves'] %}active{% endif %}"
             >
-              Management
+              {{ _("Management") }}
             </summary>
             <div class="nav-group-menu">
-              {% if current_user.privilege.value in ['hr', 'ceo'] %}<a class="nav-link {% if request.endpoint in ['manage_user_profiles', 'edit_user_profile'] %}active{% endif %}" href="{{ url_for('manage_user_profiles') }}">User profiles</a>{% endif %}
-              {% if current_user.privilege.value in ['hr', 'ceo'] %}<a class="nav-link {% if request.endpoint == 'manage_privileges' %}active{% endif %}" href="{{ url_for('manage_privileges') }}">Privileges</a>{% endif %}
-              {% if current_user.privilege.value in ['hr', 'ceo'] %}<a class="nav-link {% if request.endpoint in ['manage_contracts', 'create_contract', 'edit_contract'] %}active{% endif %}" href="{{ url_for('manage_contracts') }}">Contracts</a>{% endif %}
-              {% if current_user.privilege.value in ['hr', 'ceo'] %}<a class="nav-link {% if request.endpoint == 'manage_leave_limits' %}active{% endif %}" href="{{ url_for('manage_leave_limits') }}">Leave limits</a>{% endif %}
-              {% if can_manage_leaves_global %}<a class="nav-link {% if request.endpoint == 'manage_leaves' %}active{% endif %}" href="{{ url_for('manage_leaves') }}">Leave approvals</a>{% endif %}
-              {% if current_user.privilege.value in ['hr', 'ceo'] %}<a class="nav-link {% if request.endpoint == 'manage_leadership' %}active{% endif %}" href="{{ url_for('manage_leadership') }}">Leadership</a>{% endif %}
-              {% if current_user.privilege.value in ['hr', 'ceo'] %}<a class="nav-link {% if request.endpoint == 'manage_legal_entities' %}active{% endif %}" href="{{ url_for('manage_legal_entities') }}">Legal entities</a>{% endif %}
-              {% if current_user.privilege.value in ['hr', 'ceo'] %}<a class="nav-link {% if request.endpoint == 'manage_places_of_work' %}active{% endif %}" href="{{ url_for('manage_places_of_work') }}">Workplaces</a>{% endif %}
+              {% if current_user.privilege.value in ['hr', 'ceo'] %}<a class="nav-link {% if request.endpoint in ['manage_user_profiles', 'edit_user_profile'] %}active{% endif %}" href="{{ url_for('manage_user_profiles') }}">{{ _("User profiles") }}</a>{% endif %}
+              {% if current_user.privilege.value in ['hr', 'ceo'] %}<a class="nav-link {% if request.endpoint == 'manage_privileges' %}active{% endif %}" href="{{ url_for('manage_privileges') }}">{{ _("Privileges") }}</a>{% endif %}
+              {% if current_user.privilege.value in ['hr', 'ceo'] %}<a class="nav-link {% if request.endpoint in ['manage_contracts', 'create_contract', 'edit_contract'] %}active{% endif %}" href="{{ url_for('manage_contracts') }}">{{ _("Contracts") }}</a>{% endif %}
+              {% if current_user.privilege.value in ['hr', 'ceo'] %}<a class="nav-link {% if request.endpoint == 'manage_leave_limits' %}active{% endif %}" href="{{ url_for('manage_leave_limits') }}">{{ _("Leave limits") }}</a>{% endif %}
+              {% if can_manage_leaves_global %}<a class="nav-link {% if request.endpoint == 'manage_leaves' %}active{% endif %}" href="{{ url_for('manage_leaves') }}">{{ _("Leave approvals") }}</a>{% endif %}
+              {% if current_user.privilege.value in ['hr', 'ceo'] %}<a class="nav-link {% if request.endpoint == 'manage_leadership' %}active{% endif %}" href="{{ url_for('manage_leadership') }}">{{ _("Leadership") }}</a>{% endif %}
+              {% if current_user.privilege.value in ['hr', 'ceo'] %}<a class="nav-link {% if request.endpoint == 'manage_legal_entities' %}active{% endif %}" href="{{ url_for('manage_legal_entities') }}">{{ _("Legal entities") }}</a>{% endif %}
+              {% if current_user.privilege.value in ['hr', 'ceo'] %}<a class="nav-link {% if request.endpoint == 'manage_places_of_work' %}active{% endif %}" href="{{ url_for('manage_places_of_work') }}">{{ _("Workplaces") }}</a>{% endif %}
             </div>
           </details>
           {% endif %}
-          <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+          <a class="nav-link" href="{{ url_for('logout') }}">{{ _("Logout") }}</a>
           {% else %}
-          <a class="nav-link {% if request.endpoint == 'login' %}active{% endif %}" href="{{ url_for('login') }}">Login</a>
-          <a class="nav-link {% if request.endpoint == 'register' %}active{% endif %}" href="{{ url_for('register') }}">Register</a>
+          <a class="nav-link {% if request.endpoint == 'login' %}active{% endif %}" href="{{ url_for('login') }}">{{ _("Login") }}</a>
+          <a class="nav-link {% if request.endpoint == 'register' %}active{% endif %}" href="{{ url_for('register') }}">{{ _("Register") }}</a>
           {% endif %}
+          <form class="language-form" action="{{ url_for('set_language') }}" method="post">
+            <input type="hidden" name="next" value="{{ request.full_path if request.query_string else request.path }}">
+            <label class="sr-only" for="locale-select">{{ _("Language") }}</label>
+            <select id="locale-select" name="locale" aria-label="{{ _('Language') }}" onchange="this.form.submit()">
+              {% for locale_code, locale_name in supported_locales.items() %}
+              <option value="{{ locale_code }}" {% if locale_code == current_locale %}selected{% endif %}>{{ locale_name }}</option>
+              {% endfor %}
+            </select>
+          </form>
         </div>
       </nav>
 
