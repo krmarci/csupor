@@ -1,0 +1,338 @@
+# Hungarian translations for CSUPOR.
+msgid ""
+msgstr ""
+"Project-Id-Version: CSUPOR\n"
+"Language: hu\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "Dashboard · CSUPOR Portal"
+msgstr "Irányítópult · CSUPOR Portál"
+
+msgid "Unified employee workspace"
+msgstr "Egységes munkavállalói munkafelület"
+
+msgid "Welcome back, %(name)s."
+msgstr "Üdv újra, %(name)s."
+
+msgid "Keep personal records, family data, educational milestones, and professional credentials organized in one elegant workspace designed for fast updates and clear visibility."
+msgstr "Tartsa rendezetten személyes adatait, családi adatait, tanulmányi mérföldköveit és szakmai képesítéseit egy elegáns munkafelületen, amely gyors frissítésekre és átláthatóságra készült."
+
+msgid "Update profile"
+msgstr "Profil frissítése"
+
+msgid "Change password"
+msgstr "Jelszó módosítása"
+
+msgid "Add qualification"
+msgstr "Képesítés hozzáadása"
+
+msgid "Add dependent"
+msgstr "Eltartott hozzáadása"
+
+msgid "Account snapshot"
+msgstr "Fiók áttekintése"
+
+msgid "User ID"
+msgstr "Felhasználói azonosító"
+
+msgid "Profile completion is centralized for easier annual HR updates."
+msgstr "A profil kitöltése központosított, így az éves HR-frissítések egyszerűbbek."
+
+msgid "Dependents and qualifications are visible at a glance with cleaner summaries."
+msgstr "Az eltartottak és képesítések áttekinthetőbb összefoglalókban, egy pillantással láthatók."
+
+msgid "Professional exam records can be updated anytime from a dedicated form."
+msgstr "A szakvizsga-adatok bármikor frissíthetők egy külön űrlapon."
+
+msgid "Profile status"
+msgstr "Profil állapota"
+
+msgid "Dependents"
+msgstr "Eltartottak"
+
+msgid "Qualifications"
+msgstr "Képesítések"
+
+msgid "Leave calendar"
+msgstr "Szabadságnaptár"
+
+msgid "Select an active contract, view your monthly leave calendar, and apply for leave in a polished self-service workflow."
+msgstr "Válasszon aktív szerződést, tekintse meg havi szabadságnaptárát, és igényeljen szabadságot egy kifinomult önkiszolgáló folyamatban."
+
+msgid "Open leave calendar"
+msgstr "Szabadságnaptár megnyitása"
+
+msgid "Leave requests are approved by both a CEO user and an active principal or deputy principal for the contract's legal entity."
+msgstr "A szabadságigényeket a vezérigazgatói felhasználó és a szerződés jogi entitásához tartozó aktív igazgató vagy igazgatóhelyettes is jóváhagyja."
+
+msgid "Pending leave approvals"
+msgstr "Függőben lévő szabadság-jóváhagyások"
+
+msgid "Review requests that are waiting for your CEO or principal/deputy principal approval."
+msgstr "Tekintse át azokat az igényeket, amelyek az Ön vezérigazgatói vagy igazgatói/igazgatóhelyettesi jóváhagyására várnak."
+
+msgid "Open leave manager"
+msgstr "Szabadságkezelő megnyitása"
+
+msgid "Approve"
+msgstr "Jóváhagyás"
+
+msgid "Reject"
+msgstr "Elutasítás"
+
+msgid "Cancel"
+msgstr "Mégse"
+
+msgid "No pending leave requests currently require your review."
+msgstr "Jelenleg nincs olyan függőben lévő szabadságigény, amely az Ön felülvizsgálatát igényelné."
+
+msgid "Profile overview"
+msgstr "Profiláttekintés"
+
+msgid "Your essential employee details, highlighted in a clean summary layout."
+msgstr "Alapvető munkavállalói adatai letisztult összefoglaló elrendezésben kiemelve."
+
+msgid "Edit profile"
+msgstr "Profil szerkesztése"
+
+msgid "Full name"
+msgstr "Teljes név"
+
+msgid "Name at birth"
+msgstr "Születési név"
+
+msgid "Date of birth"
+msgstr "Születési dátum"
+
+msgid "Place of birth"
+msgstr "Születési hely"
+
+msgid "Phone"
+msgstr "Telefon"
+
+msgid "Marital status"
+msgstr "Családi állapot"
+
+msgid "Your profile has not been completed yet. Add your personal and contact information to make the portal more useful."
+msgstr "Profilja még nincs kitöltve. Adja meg személyes és kapcsolattartási adatait, hogy a portál hasznosabb legyen."
+
+msgid "Professional exam"
+msgstr "Szakvizsga"
+
+msgid "Optional teaching certification or professional exam details."
+msgstr "Opcionális pedagógus-tanúsítvány vagy szakvizsga adatai."
+
+msgid "Manage exam"
+msgstr "Vizsga kezelése"
+
+msgid "Qualification"
+msgstr "Képesítés"
+
+msgid "Year obtained"
+msgstr "Megszerzés éve"
+
+msgid "Degree number"
+msgstr "Oklevél száma"
+
+msgid "No professional exam is recorded yet. Use the dedicated form to add it now or come back later."
+msgstr "Még nincs rögzített szakvizsga. Használja a külön űrlapot a hozzáadáshoz most, vagy térjen vissza később."
+
+msgid "Track household and dependent details in a more readable, responsive table."
+msgstr "Kövesse nyomon a háztartási és eltartotti adatokat egy olvashatóbb, reszponzív táblázatban."
+
+msgid "Name"
+msgstr "Név"
+
+msgid "SSN"
+msgstr "TAJ-szám"
+
+msgid "Dependency start"
+msgstr "Eltartás kezdete"
+
+msgid "Disability"
+msgstr "Fogyatékosság"
+
+msgid "No dependents have been added yet. Add one to keep benefit-related records complete."
+msgstr "Még nincs hozzáadott eltartott. Adjon hozzá egyet, hogy a juttatásokhoz kapcsolódó nyilvántartások teljesek legyenek."
+
+msgid "Review academic achievements and highlight the highest completed credential."
+msgstr "Tekintse át tanulmányi eredményeit, és emelje ki a legmagasabb megszerzett végzettséget."
+
+msgid "Highest"
+msgstr "Legmagasabb"
+
+msgid "Degree #"
+msgstr "Oklevél #"
+
+msgid "No educational qualifications are listed yet. Add your latest degree or certification to get started."
+msgstr "Még nincs felsorolt tanulmányi képesítés. Kezdésként adja hozzá legutóbbi diplomáját vagy tanúsítványát."
+
+msgid "User profile administration"
+msgstr "Felhasználói profilok adminisztrációja"
+
+msgid "HR and CEO users can select any employee account and edit that person's profile information."
+msgstr "A HR- és vezérigazgatói felhasználók bármely munkavállalói fiókot kiválaszthatnak, és szerkeszthetik az adott személy profiladatait."
+
+msgid "Open profile manager"
+msgstr "Profilkezelő megnyitása"
+
+msgid "Review registered users, choose a record, and update profile details without signing in as that employee."
+msgstr "Tekintse át a regisztrált felhasználókat, válasszon rekordot, és frissítse a profiladatokat anélkül, hogy az adott munkavállalóként jelentkezne be."
+
+msgid "Contract management"
+msgstr "Szerződéskezelés"
+
+msgid "Create and edit user contracts with teacher classification and workplace assignment."
+msgstr "Hozzon létre és szerkesszen felhasználói szerződéseket pedagógus-besorolással és munkahely-hozzárendeléssel."
+
+msgid "Open contract manager"
+msgstr "Szerződéskezelő megnyitása"
+
+msgid "Leadership management"
+msgstr "Vezetői megbízások kezelése"
+
+msgid "HR and CEO users can create and update leadership assignments."
+msgstr "A HR- és vezérigazgatói felhasználók vezetői megbízásokat hozhatnak létre és frissíthetnek."
+
+msgid "Open leadership manager"
+msgstr "Vezetői kezelő megnyitása"
+
+msgid "Leave limit management"
+msgstr "Szabadságkeret-kezelés"
+
+msgid "Assign calendar-year and range-based leave limits to active contracts."
+msgstr "Rendeljen naptári éves és időszak alapú szabadságkereteket az aktív szerződésekhez."
+
+msgid "Open leave limit manager"
+msgstr "Szabadságkeret-kezelő megnyitása"
+
+msgid "Legal entities and workplaces"
+msgstr "Jogi entitások és munkahelyek"
+
+msgid "Maintain employers and places of work used in contracts."
+msgstr "Tartsa karban a szerződésekben használt munkáltatókat és munkahelyeket."
+
+msgid "Manage legal entities"
+msgstr "Jogi entitások kezelése"
+
+msgid "Manage workplaces"
+msgstr "Munkahelyek kezelése"
+
+msgid "Privilege management"
+msgstr "Jogosultságkezelés"
+
+msgid "HR, CEO, and developer users can update role assignments for newly registered accounts."
+msgstr "A HR-, vezérigazgatói és fejlesztői felhasználók frissíthetik az újonnan regisztrált fiókok szerepkör-hozzárendeléseit."
+
+msgid "Open privilege manager"
+msgstr "Jogosultságkezelő megnyitása"
+
+msgid "Access advanced user-role administration from the dedicated management page with the same visual system as the rest of the portal."
+msgstr "Érje el a fejlett felhasználói szerepkör-adminisztrációt a külön kezelőoldalról, a portál többi részével azonos vizuális rendszerben."
+
+msgid "Complete"
+msgstr "Teljes"
+
+msgid "%(percent)s%% complete"
+msgstr "%(percent)s%% kész"
+
+msgid "Language updated."
+msgstr "A nyelv frissítve."
+
+msgid "Selected language is not supported."
+msgstr "A kiválasztott nyelv nem támogatott."
+
+msgid "CSUPOR User System"
+msgstr "CSUPOR Felhasználói Rendszer"
+
+msgid "CSUPOR Portal"
+msgstr "CSUPOR Portál"
+
+msgid "Modern employee records and profile management"
+msgstr "Modern munkavállalói nyilvántartás és profilkezelés"
+
+msgid "Dashboard"
+msgstr "Irányítópult"
+
+msgid "Management"
+msgstr "Kezelés"
+
+msgid "User profiles"
+msgstr "Felhasználói profilok"
+
+msgid "Privileges"
+msgstr "Jogosultságok"
+
+msgid "Contracts"
+msgstr "Szerződések"
+
+msgid "Leave limits"
+msgstr "Szabadságkeretek"
+
+msgid "Leave approvals"
+msgstr "Szabadság-jóváhagyások"
+
+msgid "Leadership"
+msgstr "Vezetés"
+
+msgid "Legal entities"
+msgstr "Jogi entitások"
+
+msgid "Workplaces"
+msgstr "Munkahelyek"
+
+msgid "Logout"
+msgstr "Kijelentkezés"
+
+msgid "Login"
+msgstr "Bejelentkezés"
+
+msgid "Register"
+msgstr "Regisztráció"
+
+msgid "Language"
+msgstr "Nyelv"
+
+
+msgid "pending approval"
+msgstr "jóváhagyásra vár"
+
+msgid "pending cancellation"
+msgstr "lemondásra vár"
+
+msgid "paid leave"
+msgstr "fizetett szabadság"
+
+msgid "health leave"
+msgstr "egészségügyi szabadság"
+
+msgid "childcare sickness benefit"
+msgstr "gyermekápolási táppénz"
+
+msgid "childbirth leave"
+msgstr "szülési szabadság"
+
+msgid "exemption from obligation to work"
+msgstr "mentesülés a munkavégzési kötelezettség alól"
+
+msgid "approved"
+msgstr "jóváhagyva"
+
+msgid "rejected"
+msgstr "elutasítva"
+
+msgid "cancelled"
+msgstr "lemondva"
+
+msgid "employee"
+msgstr "munkavállaló"
+
+msgid "hr"
+msgstr "hr"
+
+msgid "ceo"
+msgstr "vezérigazgató"
+
+msgid "developer"
+msgstr "fejlesztő"

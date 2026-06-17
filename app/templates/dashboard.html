@@ -1,31 +1,30 @@
 {% extends "base.html" %}
-{% block title %}Dashboard · CSUPOR Portal{% endblock %}
+{% block title %}{{ _("Dashboard · CSUPOR Portal") }}{% endblock %}
 {% block content %}
 <section class="hero">
   <div class="hero-copy">
-    <span class="eyebrow">Unified employee workspace</span>
-    <h1>Welcome back, {{ current_user.profile.full_name if current_user.profile and current_user.profile.full_name else current_user.username }}.</h1>
+    <span class="eyebrow">{{ _("Unified employee workspace") }}</span>
+    <h1>{{ _("Welcome back, %(name)s.", name=current_user.profile.full_name if current_user.profile and current_user.profile.full_name else current_user.username) }}</h1>
     <p>
-      Keep personal records, family data, educational milestones, and professional credentials organized in one
-      elegant workspace designed for fast updates and clear visibility.
+      {{ _("Keep personal records, family data, educational milestones, and professional credentials organized in one elegant workspace designed for fast updates and clear visibility.") }}
     </p>
     <div class="hero-actions">
-      <a class="button button-primary" href="{{ url_for('edit_profile') }}">Update profile</a>
-      <a class="button button-secondary" href="{{ url_for('change_password') }}">Change password</a>
-      <a class="button button-secondary" href="{{ url_for('add_qualification') }}">Add qualification</a>
-      <a class="button button-secondary" href="{{ url_for('add_dependent') }}">Add dependent</a>
+      <a class="button button-primary" href="{{ url_for('edit_profile') }}">{{ _("Update profile") }}</a>
+      <a class="button button-secondary" href="{{ url_for('change_password') }}">{{ _("Change password") }}</a>
+      <a class="button button-secondary" href="{{ url_for('add_qualification') }}">{{ _("Add qualification") }}</a>
+      <a class="button button-secondary" href="{{ url_for('add_dependent') }}">{{ _("Add dependent") }}</a>
     </div>
   </div>
   <aside class="hero-panel">
-    <span class="badge">Account snapshot</span>
+    <span class="badge">{{ _("Account snapshot") }}</span>
     <div>
       <strong>{{ current_user.username }}</strong>
-      <div class="nav-meta">User ID {{ current_user.id }} · {{ current_user.privilege.value|upper }}</div>
+      <div class="nav-meta">{{ _("User ID") }} {{ current_user.id }} · {{ _(current_user.privilege.value)|upper }}</div>
     </div>
     <ul>
-      <li>Profile completion is centralized for easier annual HR updates.</li>
-      <li>Dependents and qualifications are visible at a glance with cleaner summaries.</li>
-      <li>Professional exam records can be updated anytime from a dedicated form.</li>
+      <li>{{ _("Profile completion is centralized for easier annual HR updates.") }}</li>
+      <li>{{ _("Dependents and qualifications are visible at a glance with cleaner summaries.") }}</li>
+      <li>{{ _("Professional exam records can be updated anytime from a dedicated form.") }}</li>
     </ul>
   </aside>
 </section>
@@ -35,21 +34,21 @@
     <article class="stat-card">
       <div class="stat-icon">👤</div>
       <div class="stat-copy">
-        <span>Profile status</span>
+        <span>{{ _("Profile status") }}</span>
         <strong>{{ profile_status_label }}</strong>
       </div>
     </article>
     <article class="stat-card">
       <div class="stat-icon">👨‍👩‍👧</div>
       <div class="stat-copy">
-        <span>Dependents</span>
+        <span>{{ _("Dependents") }}</span>
         <strong>{{ current_user.dependents|length }}</strong>
       </div>
     </article>
     <article class="stat-card">
       <div class="stat-icon">🎓</div>
       <div class="stat-copy">
-        <span>Qualifications</span>
+        <span>{{ _("Qualifications") }}</span>
         <strong>{{ current_user.qualifications|length }}</strong>
       </div>
     </article>
@@ -59,13 +58,13 @@
     <section class="card span-12">
       <div class="section-heading">
         <div>
-          <h2>Leave calendar</h2>
-          <p>Select an active contract, view your monthly leave calendar, and apply for leave in a polished self-service workflow.</p>
+          <h2>{{ _("Leave calendar") }}</h2>
+          <p>{{ _("Select an active contract, view your monthly leave calendar, and apply for leave in a polished self-service workflow.") }}</p>
         </div>
-        <a class="button button-primary" href="{{ url_for('leaves') }}">Open leave calendar</a>
+        <a class="button button-primary" href="{{ url_for('leaves') }}">{{ _("Open leave calendar") }}</a>
       </div>
       <div class="empty-state">
-        Leave requests are approved by both a CEO user and an active principal or deputy principal for the contract's legal entity.
+        {{ _("Leave requests are approved by both a CEO user and an active principal or deputy principal for the contract's legal entity.") }}
       </div>
     </section>
 
@@ -73,10 +72,10 @@
     <section class="card span-12">
       <div class="section-heading">
         <div>
-          <h2>Pending leave approvals</h2>
-          <p>Review requests that are waiting for your CEO or principal/deputy principal approval.</p>
+          <h2>{{ _("Pending leave approvals") }}</h2>
+          <p>{{ _("Review requests that are waiting for your CEO or principal/deputy principal approval.") }}</p>
         </div>
-        <a class="button button-secondary" href="{{ url_for('manage_leaves') }}">Open leave manager</a>
+        <a class="button button-secondary" href="{{ url_for('manage_leaves') }}">{{ _("Open leave manager") }}</a>
       </div>
 
       {% if pending_leave_requests %}
@@ -86,68 +85,68 @@
           <div class="record-item-header">
             <div>
               <h3>{{ leave_request.user.profile.full_name if leave_request.user.profile and leave_request.user.profile.full_name else leave_request.user.username }}</h3>
-              <p>{{ leave_request.contract.employer.name }} · {{ leave_request.category.value|capitalize }} · {{ leave_request.start_date }}{% if leave_request.end_date %} → {{ leave_request.end_date }}{% endif %}</p>
+              <p>{{ leave_request.contract.employer.name }} · {{ _(leave_request.category.value)|capitalize }} · {{ leave_request.start_date }}{% if leave_request.end_date %} → {{ leave_request.end_date }}{% endif %}</p>
             </div>
-            <span class="pill">{{ leave_request.status.value|capitalize }}</span>
+            <span class="pill">{{ _(leave_request.status.value)|capitalize }}</span>
           </div>
           <form method="post" action="{{ url_for('manage_leaves') }}" class="inline-form">
             <input type="hidden" name="leave_request_id" value="{{ leave_request.id }}">
             <input type="hidden" name="return_to" value="dashboard">
             {% if leave_request.status.value == 'pending approval' %}
-            <button type="submit" name="action" value="approve">Approve</button>
-            <button type="submit" name="action" value="reject" class="button-secondary">Reject</button>
+            <button type="submit" name="action" value="approve">{{ _("Approve") }}</button>
+            <button type="submit" name="action" value="reject" class="button-secondary">{{ _("Reject") }}</button>
             {% elif leave_request.status.value == 'pending cancellation' %}
-            <button type="submit" name="action" value="cancel" class="button-secondary">Cancel</button>
-            <button type="submit" name="action" value="reject" class="button-secondary">Reject</button>
+            <button type="submit" name="action" value="cancel" class="button-secondary">{{ _("Cancel") }}</button>
+            <button type="submit" name="action" value="reject" class="button-secondary">{{ _("Reject") }}</button>
             {% endif %}
           </form>
         </article>
         {% endfor %}
       </div>
       {% else %}
-      <div class="empty-state">No pending leave requests currently require your review.</div>
+      <div class="empty-state">{{ _("No pending leave requests currently require your review.") }}</div>
       {% endif %}
     </section>
     {% endif %}
     <section class="card span-7">
       <div class="section-heading">
         <div>
-          <h2>Profile overview</h2>
-          <p>Your essential employee details, highlighted in a clean summary layout.</p>
+          <h2>{{ _("Profile overview") }}</h2>
+          <p>{{ _("Your essential employee details, highlighted in a clean summary layout.") }}</p>
         </div>
-        <a class="button button-secondary" href="{{ url_for('edit_profile') }}">Edit profile</a>
+        <a class="button button-secondary" href="{{ url_for('edit_profile') }}">{{ _("Edit profile") }}</a>
       </div>
 
       {% if current_user.profile and current_user.profile.full_name %}
       <dl class="data-list">
         <div>
-          <dt>Full name</dt>
+          <dt>{{ _("Full name") }}</dt>
           <dd>{{ current_user.profile.full_name }}</dd>
         </div>
         <div>
-          <dt>Name at birth</dt>
+          <dt>{{ _("Name at birth") }}</dt>
           <dd>{{ current_user.profile.name_at_birth or '—' }}</dd>
         </div>
         <div>
-          <dt>Date of birth</dt>
+          <dt>{{ _("Date of birth") }}</dt>
           <dd>{{ current_user.profile.date_of_birth or '—' }}</dd>
         </div>
         <div>
-          <dt>Place of birth</dt>
+          <dt>{{ _("Place of birth") }}</dt>
           <dd>{{ current_user.profile.place_of_birth or '—' }}</dd>
         </div>
         <div>
-          <dt>Phone</dt>
+          <dt>{{ _("Phone") }}</dt>
           <dd>{{ current_user.profile.phone_number or '—' }}</dd>
         </div>
         <div>
-          <dt>Marital status</dt>
+          <dt>{{ _("Marital status") }}</dt>
           <dd>{{ current_user.profile.marital_status or '—' }}</dd>
         </div>
       </dl>
       {% else %}
       <div class="empty-state">
-        Your profile has not been completed yet. Add your personal and contact information to make the portal more useful.
+        {{ _("Your profile has not been completed yet. Add your personal and contact information to make the portal more useful.") }}
       </div>
       {% endif %}
     </section>
@@ -155,30 +154,30 @@
     <section class="card span-5">
       <div class="section-heading">
         <div>
-          <h2>Professional exam</h2>
-          <p>Optional teaching certification or professional exam details.</p>
+          <h2>{{ _("Professional exam") }}</h2>
+          <p>{{ _("Optional teaching certification or professional exam details.") }}</p>
         </div>
-        <a class="button button-secondary" href="{{ url_for('professional_exam') }}">Manage exam</a>
+        <a class="button button-secondary" href="{{ url_for('professional_exam') }}">{{ _("Manage exam") }}</a>
       </div>
 
       {% if current_user.professional_exam %}
       <div class="info-stack">
         <div class="mini-card">
-          <div class="muted">Qualification</div>
+          <div class="muted">{{ _("Qualification") }}</div>
           <strong>{{ current_user.professional_exam.qualification_name }}</strong>
         </div>
         <div class="mini-card">
-          <div class="muted">Year obtained</div>
+          <div class="muted">{{ _("Year obtained") }}</div>
           <strong>{{ current_user.professional_exam.year_obtained }}</strong>
         </div>
         <div class="mini-card">
-          <div class="muted">Degree number</div>
+          <div class="muted">{{ _("Degree number") }}</div>
           <strong>{{ current_user.professional_exam.degree_number }}</strong>
         </div>
       </div>
       {% else %}
       <div class="empty-state">
-        No professional exam is recorded yet. Use the dedicated form to add it now or come back later.
+        {{ _("No professional exam is recorded yet. Use the dedicated form to add it now or come back later.") }}
       </div>
       {% endif %}
     </section>
@@ -186,10 +185,10 @@
     <section class="table-card span-7">
       <div class="section-heading">
         <div>
-          <h2>Dependents</h2>
-          <p>Track household and dependent details in a more readable, responsive table.</p>
+          <h2>{{ _("Dependents") }}</h2>
+          <p>{{ _("Track household and dependent details in a more readable, responsive table.") }}</p>
         </div>
-        <a class="button button-primary" href="{{ url_for('add_dependent') }}">Add dependent</a>
+        <a class="button button-primary" href="{{ url_for('add_dependent') }}">{{ _("Add dependent") }}</a>
       </div>
 
       {% if current_user.dependents %}
@@ -197,11 +196,11 @@
         <table>
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Date of birth</th>
-              <th>SSN</th>
-              <th>Dependency start</th>
-              <th>Disability</th>
+              <th>{{ _("Name") }}</th>
+              <th>{{ _("Date of birth") }}</th>
+              <th>{{ _("SSN") }}</th>
+              <th>{{ _("Dependency start") }}</th>
+              <th>{{ _("Disability") }}</th>
             </tr>
           </thead>
           <tbody>
@@ -219,7 +218,7 @@
       </div>
       {% else %}
       <div class="empty-state">
-        No dependents have been added yet. Add one to keep benefit-related records complete.
+        {{ _("No dependents have been added yet. Add one to keep benefit-related records complete.") }}
       </div>
       {% endif %}
     </section>
@@ -227,10 +226,10 @@
     <section class="card span-5">
       <div class="section-heading">
         <div>
-          <h2>Qualifications</h2>
-          <p>Review academic achievements and highlight the highest completed credential.</p>
+          <h2>{{ _("Qualifications") }}</h2>
+          <p>{{ _("Review academic achievements and highlight the highest completed credential.") }}</p>
         </div>
-        <a class="button button-primary" href="{{ url_for('add_qualification') }}">Add qualification</a>
+        <a class="button button-primary" href="{{ url_for('add_qualification') }}">{{ _("Add qualification") }}</a>
       </div>
 
       {% if current_user.qualifications %}
@@ -243,12 +242,12 @@
               <p>{{ q.institution_name }}</p>
             </div>
             {% if q.highest %}
-            <span class="pill">Highest</span>
+            <span class="pill">{{ _("Highest") }}</span>
             {% endif %}
           </div>
           <div class="record-meta">
             <span class="badge">{{ q.level_or_type }}</span>
-            <span class="badge">Degree # {{ q.degree_number }}</span>
+            <span class="badge">{{ _("Degree #") }} {{ q.degree_number }}</span>
             <span class="badge">{{ q.year_obtained }}</span>
           </div>
         </article>
@@ -256,7 +255,7 @@
       </div>
       {% else %}
       <div class="empty-state">
-        No educational qualifications are listed yet. Add your latest degree or certification to get started.
+        {{ _("No educational qualifications are listed yet. Add your latest degree or certification to get started.") }}
       </div>
       {% endif %}
     </section>
@@ -265,13 +264,13 @@
     <section class="card span-12">
       <div class="section-heading">
         <div>
-          <h2>User profile administration</h2>
-          <p>HR and CEO users can select any employee account and edit that person's profile information.</p>
+          <h2>{{ _("User profile administration") }}</h2>
+          <p>{{ _("HR and CEO users can select any employee account and edit that person's profile information.") }}</p>
         </div>
-        <a class="button button-secondary" href="{{ url_for('manage_user_profiles') }}">Open profile manager</a>
+        <a class="button button-secondary" href="{{ url_for('manage_user_profiles') }}">{{ _("Open profile manager") }}</a>
       </div>
       <div class="empty-state">
-        Review registered users, choose a record, and update profile details without signing in as that employee.
+        {{ _("Review registered users, choose a record, and update profile details without signing in as that employee.") }}
       </div>
     </section>
     {% endif %}
@@ -281,10 +280,10 @@
     <section class="card span-12">
       <div class="section-heading">
         <div>
-          <h2>Contract management</h2>
-          <p>Create and edit user contracts with teacher classification and workplace assignment.</p>
+          <h2>{{ _("Contract management") }}</h2>
+          <p>{{ _("Create and edit user contracts with teacher classification and workplace assignment.") }}</p>
         </div>
-        <a class="button button-secondary" href="{{ url_for('manage_contracts') }}">Open contract manager</a>
+        <a class="button button-secondary" href="{{ url_for('manage_contracts') }}">{{ _("Open contract manager") }}</a>
       </div>
     </section>
 
@@ -292,10 +291,10 @@
     <section class="card span-12">
       <div class="section-heading">
         <div>
-          <h2>Leadership management</h2>
-          <p>HR and CEO users can create and update leadership assignments.</p>
+          <h2>{{ _("Leadership management") }}</h2>
+          <p>{{ _("HR and CEO users can create and update leadership assignments.") }}</p>
         </div>
-        <a class="button button-secondary" href="{{ url_for('manage_leadership') }}">Open leadership manager</a>
+        <a class="button button-secondary" href="{{ url_for('manage_leadership') }}">{{ _("Open leadership manager") }}</a>
       </div>
     </section>
     {% endif %}
@@ -304,10 +303,10 @@
     <section class="card span-12">
       <div class="section-heading">
         <div>
-          <h2>Leave limit management</h2>
-          <p>Assign calendar-year and range-based leave limits to active contracts.</p>
+          <h2>{{ _("Leave limit management") }}</h2>
+          <p>{{ _("Assign calendar-year and range-based leave limits to active contracts.") }}</p>
         </div>
-        <a class="button button-secondary" href="{{ url_for('manage_leave_limits') }}">Open leave limit manager</a>
+        <a class="button button-secondary" href="{{ url_for('manage_leave_limits') }}">{{ _("Open leave limit manager") }}</a>
       </div>
     </section>
     {% endif %}
@@ -315,12 +314,12 @@
     <section class="card span-12">
       <div class="section-heading">
         <div>
-          <h2>Legal entities and workplaces</h2>
-          <p>Maintain employers and places of work used in contracts.</p>
+          <h2>{{ _("Legal entities and workplaces") }}</h2>
+          <p>{{ _("Maintain employers and places of work used in contracts.") }}</p>
         </div>
         <div class="button-row">
-          <a class="button button-secondary" href="{{ url_for('manage_legal_entities') }}">Manage legal entities</a>
-          <a class="button button-secondary" href="{{ url_for('manage_places_of_work') }}">Manage workplaces</a>
+          <a class="button button-secondary" href="{{ url_for('manage_legal_entities') }}">{{ _("Manage legal entities") }}</a>
+          <a class="button button-secondary" href="{{ url_for('manage_places_of_work') }}">{{ _("Manage workplaces") }}</a>
         </div>
       </div>
     </section>
@@ -330,13 +329,13 @@
     <section class="card span-12">
       <div class="section-heading">
         <div>
-          <h2>Privilege management</h2>
-          <p>HR, CEO, and developer users can update role assignments for newly registered accounts.</p>
+          <h2>{{ _("Privilege management") }}</h2>
+          <p>{{ _("HR, CEO, and developer users can update role assignments for newly registered accounts.") }}</p>
         </div>
-        <a class="button button-secondary" href="{{ url_for('manage_privileges') }}">Open privilege manager</a>
+        <a class="button button-secondary" href="{{ url_for('manage_privileges') }}">{{ _("Open privilege manager") }}</a>
       </div>
       <div class="empty-state">
-        Access advanced user-role administration from the dedicated management page with the same visual system as the rest of the portal.
+        {{ _("Access advanced user-role administration from the dedicated management page with the same visual system as the rest of the portal.") }}
       </div>
     </section>
     {% endif %}
