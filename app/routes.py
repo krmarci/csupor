@@ -98,8 +98,8 @@ def _profile_completion_percentage(profile: UserProfile | None) -> int:
 def _profile_status_label(profile: UserProfile | None) -> str:
     completion_percentage = _profile_completion_percentage(profile)
     if completion_percentage == 100:
-        return "Complete"
-    return f"{completion_percentage}% complete"
+        return _("Complete")
+    return _("%(percent)s%% complete", percent=completion_percentage)
 
 
 def _normalize_optional_text(value: str | None) -> str | None:
