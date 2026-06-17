@@ -101,7 +101,7 @@
         type="button"
         class="calendar-day calendar-day-button"
         data-calendar-date="{{ day.isoformat() }}"
-        aria-label="{{ _("Select {{ day.strftime('%B') }} {{ day.day }}, {{ day.year }} as a leave date") }}"
+        aria-label="{{ _("Select %(month)s %(day)s, %(year)s as a leave date", month=day.strftime('%B'), day=day.day, year=day.year) }}"
       >
         <time datetime="{{ day.isoformat() }}">{{ day.day }}</time>
         {% for leave_request in month_requests %}
