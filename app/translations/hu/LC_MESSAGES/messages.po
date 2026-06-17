@@ -729,8 +729,8 @@ msgid "Sun"
 msgstr "TAJ-szám"
 
 #: app/templates/leaves.html:104
-msgid "Select {{ day.strftime('%B') }} {{ day.day }}, {{ day.year }} as a leave date"
-msgstr "{{ day.year }}. {{ day.strftime('%B') }} {{ day.day }} kiválasztása szabadságnapként"
+msgid "Select %(month)s %(day)s, %(year)s as a leave date"
+msgstr "%(year)s. %(month)s %(day)s kiválasztása szabadságnapként"
 
 #: app/templates/leaves.html:122
 msgid "This month"
