@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+{% block title %}{{ _('Working day calendar · CSUPOR Portal') }}{% endblock %}
+{% block content %}
+<div class="working-day-page">
+<section class="section-heading working-day-heading-card">
+  <div>
+    <span class="eyebrow">{{ _('HR calendar') }}</span>
+    <h2>{{ _('Manage working days and holidays') }}</h2>
+    <p>{{ _('Defaults come from the Hungarian work calendar. Override specific dates when Saturdays become working days or ordinary weekdays become holidays.') }}</p>
+  </div>
+</section>
+
+<section class="working-day-calendar-card">
+  <div class="calendar-toolbar">
+    <a class="button button-secondary" href="{{ url_for('manage_working_days', year=previous_month.year, month=previous_month.month) }}">← {{ previous_month.strftime('%b') }}</a>
+    <div>
+      <h2>{{ month_label }}</h2>
+      <p>{{ _('Hungary default calendar with HR overrides') }}</p>
+    </div>
+    <a class="button button-secondary" href="{{ url_for('manage_working_days', year=next_month.year, month=next_month.month) }}">{{ next_month.strftime('%b') }} →</a>
+  </div>
+
+  <div class="calendar-grid weekday-grid">
+    <div>{{ _('Mon') }}</div><div>{{ _('Tue') }}</div><div>{{ _('Wed') }}</div><div>{{ _('Thu') }}</div><div>{{ _('Fri') }}</div><div>{{ _('Sat') }}</div><div>{{ _('Sun') }}</div>
+  </div>
+  <div class="calendar-grid day-grid working-day-grid">
+    {% for day in calendar_days %}
+      {% if day %}
+        {% set status = day_statuses[day] %}
+        <article class="calendar-day working-day-card {{ 'is-working-day' if status.is_working_day else 'is-holiday' }} {{ 'is-override' if status.is_override else '' }}">
+          <div class="working-day-header">
+            <time datetime="{{ day.isoformat() }}">{{ day.day }}</time>
+            <span class="status-pill {{ 'status-approved' if status.is_working_day else 'status-rejected' }}">{{ _('Working day') if status.is_working_day else _('Holiday') }}</span>
+          </div>
+          <small class="help-text">
+            {{ _('Default: working day') if status.default_is_working_day else _('Default: holiday') }}{% if status.is_override %} · {{ _('HR override') }}{% endif %}
+          </small>
+          <form method="post" class="working-day-actions">
+            <input type="hidden" name="day" value="{{ day.isoformat() }}">
+            <input type="hidden" name="year" value="{{ selected_year }}">
+            <input type="hidden" name="month" value="{{ selected_month }}">
+            <div class="working-day-button-row">
+              {% if status.is_override %}
+                <button type="submit" name="action" value="reset" class="button-secondary">{{ _('Reset') }}</button>
+              {% elif status.is_working_day %}
+                <button type="submit" name="action" value="holiday" class="button-secondary">{{ _('Set holiday') }}</button>
+              {% else %}
+                <button type="submit" name="action" value="working" class="button-secondary">{{ _('Set working') }}</button>
+              {% endif %}
+            </div>
+          </form>
+        </article>
+      {% else %}
+        <div class="calendar-day empty-day" aria-hidden="true"></div>
+      {% endif %}
+    {% endfor %}
+  </div>
+  <div class="working-day-legend" aria-label="{{ _('Working day calendar legend') }}">
+    <span class="legend-item"><span class="legend-swatch working"></span>{{ _('Working day') }}</span>
+    <span class="legend-item"><span class="legend-swatch holiday"></span>{{ _('Holiday') }}</span>
+    <span class="legend-item"><span class="legend-swatch override"></span>{{ _('HR override') }}</span>
+  </div>
+</section>
+</div>
+
+<style>
+  .working-day-page {
+    display: grid;
+    gap: 24px;
+  }
+
+  .working-day-heading-card,
+  .working-day-calendar-card {
+    padding: 24px;
+    border-radius: var(--radius-lg);
+    background: var(--surface-strong);
+    border: 1px solid rgba(255, 255, 255, 0.48);
+    box-shadow: var(--shadow);
+  }
+
+  .working-day-heading-card {
+    margin-bottom: 0;
+  }
+
+  .calendar-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 18px;
+    text-align: center;
+  }
+
+  .calendar-toolbar h2,
+  .calendar-toolbar p {
+    margin: 0;
+  }
+
+  .calendar-toolbar p {
+    color: var(--text-soft);
+    font-size: .92rem;
+  }
+
+  .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .weekday-grid {
+    margin-bottom: 10px;
+    color: var(--text-soft);
+    font-weight: 800;
+    text-align: center;
+    text-transform: uppercase;
+    font-size: .76rem;
+    letter-spacing: .08em;
+  }
+
+  .working-day-grid .calendar-day {
+    min-width: 0;
+    min-height: 13.5rem;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+  }
+
+  .working-day-card {
+    display: flex;
+    flex-direction: column;
+    gap: .55rem;
+  }
+
+  .empty-day {
+    background: rgba(148, 163, 184, .08);
+  }
+
+  .working-day-card.is-holiday { background: #fff7ed; border-color: #fed7aa; }
+  .working-day-card.is-working-day { background: #f0fdf4; border-color: #bbf7d0; }
+  .working-day-card.is-override { box-shadow: inset 0 0 0 2px rgba(37, 99, 235, .22); }
+
+  .working-day-header,
+  .working-day-button-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .45rem;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .working-day-header time {
+    font-weight: 800;
+    font-size: 1.05rem;
+  }
+
+  .working-day-actions {
+    display: grid;
+    gap: .45rem;
+    margin-top: auto;
+  }
+
+  .working-day-actions .button-secondary {
+    flex: 1 1 5.8rem;
+    padding: .45rem .55rem;
+    font-size: .8rem;
+  }
+
+  .working-day-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 16px;
+    color: var(--text-soft);
+    font-size: .9rem;
+  }
+
+  .legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .legend-swatch {
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+
+  .legend-swatch.working { background: #f0fdf4; border-color: #bbf7d0; }
+  .legend-swatch.holiday { background: #fff7ed; border-color: #fed7aa; }
+  .legend-swatch.override { box-shadow: inset 0 0 0 2px rgba(37, 99, 235, .35); }
+
+  @media (max-width: 860px) {
+    .calendar-toolbar {
+      align-items: stretch;
+      text-align: left;
+    }
+
+    .calendar-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .weekday-grid {
+      display: none;
+    }
+
+    .empty-day {
+      display: none;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .calendar-toolbar {
+      flex-direction: column;
+    }
+
+    .calendar-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+{% endblock %}
