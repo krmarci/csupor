@@ -762,7 +762,7 @@ msgstr "Biztonságos hozzáférés"
 
 #: app/templates/login.html:8
 msgid "Welcome back to CSUPOR."
-msgstr "Üdv újra, %(name)s."
+msgstr "Üdv újra a CSUPOR-ban."
 
 #: app/templates/login.html:10
 msgid "Sign in to manage employee records with a cleaner, more intuitive portal experience built for daily administrative work."
