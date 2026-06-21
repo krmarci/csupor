@@ -313,3 +313,14 @@ CREATE TABLE IF NOT EXISTS leave_requests (
   CONSTRAINT chk_leave_requests_date_order
     CHECK (end_date IS NULL OR end_date >= start_date)
 ) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS working_day_overrides (
+  id INT NOT NULL AUTO_INCREMENT,
+  day DATE NOT NULL,
+  is_working_day TINYINT(1) NOT NULL,
+  note VARCHAR(255) NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_working_day_overrides_day (day)
+) ENGINE=InnoDB;
