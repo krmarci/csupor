@@ -301,6 +301,15 @@ class LeaveRequest(db.Model):
     decided_by = db.relationship("User", foreign_keys=[decided_by_id])
 
 
+class WorkingDayOverride(db.Model):
+    __tablename__ = "working_day_overrides"
+
+    id = db.Column(db.Integer, primary_key=True)
+    day = db.Column(db.Date, unique=True, nullable=False)
+    is_working_day = db.Column(db.Boolean, nullable=False)
+    note = db.Column(db.String(255), nullable=True)
+
+
 class Leadership(db.Model):
     __tablename__ = "leadership"
 

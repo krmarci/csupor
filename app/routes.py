@@ -8,6 +8,8 @@ from flask_login import current_user, login_required, login_user, logout_user
 
 from . import SUPPORTED_LOCALES, db, get_locale
 
+from .working_calendar import HungaryCalendar
+
 from .models import (
     Contract,
     ContractLeaveLimit,
@@ -30,6 +32,7 @@ from .models import (
     User,
     UserPrivilege,
     UserProfile,
+    WorkingDayOverride,
     parse_iso_date,
 )
 
@@ -386,6 +389,27 @@ def _available_leave_request_categories(user: User, contract: Contract) -> list[
         }
     )
     return categories
+
+
+def _hungary_calendar() -> HungaryCalendar:
+    return HungaryCalendar()
+
+
+def _default_is_working_day(day: date) -> bool:
+    return _hungary_calendar().is_working_day(day)
+
+
+def _working_day_status(day: date, overrides_by_day: dict[date, WorkingDayOverride] | None = None) -> dict[str, object]:
+    override = (overrides_by_day or {}).get(day)
+    default_is_working = _default_is_working_day(day)
+    is_working_day = override.is_working_day if override else default_is_working
+    return {
+        "day": day,
+        "is_working_day": is_working_day,
+        "default_is_working_day": default_is_working,
+        "is_override": override is not None,
+        "note": override.note if override else None,
+    }
 
 
 def _month_calendar_days(year: int, month: int) -> list[date | None]:
@@ -1402,6 +1426,72 @@ def init_routes(app):
             leave_request_end_date=_leave_request_end_date,
             workplace_leave_counts=workplace_leave_counts,
             user_display_name=_user_display_name,
+        )
+
+
+    @app.route("/working-days", methods=["GET", "POST"])
+    @privilege_manager_required
+    def manage_working_days():
+        today = date.today()
+        selected_year = request.values.get("year", type=int) or today.year
+        selected_month = request.values.get("month", type=int) or today.month
+        if selected_year < 1970 or selected_year > 2100:
+            selected_year = today.year
+        if selected_month < 1 or selected_month > 12:
+            selected_month = today.month
+
+        if request.method == "POST":
+            selected_day = parse_iso_date(request.form.get("day"))
+            action = request.form.get("action")
+            note = _normalize_optional_text(request.form.get("note"))
+            if selected_day is None:
+                flash("Please select a valid day.", "error")
+            elif action == "reset":
+                WorkingDayOverride.query.filter_by(day=selected_day).delete()
+                db.session.commit()
+                flash("The day now follows the Hungarian calendar default again.", "success")
+            elif action in {"working", "holiday"}:
+                override = WorkingDayOverride.query.filter_by(day=selected_day).first()
+                if override is None:
+                    override = WorkingDayOverride(day=selected_day)
+                    db.session.add(override)
+                override.is_working_day = action == "working"
+                override.note = note
+                db.session.commit()
+                flash("Working day calendar updated.", "success")
+            else:
+                flash("Invalid working day action.", "error")
+            return redirect(url_for("manage_working_days", year=selected_year, month=selected_month))
+
+        month_start = date(selected_year, selected_month, 1)
+        if selected_month == 12:
+            next_month = date(selected_year + 1, 1, 1)
+            previous_month = date(selected_year, 11, 1)
+        elif selected_month == 1:
+            next_month = date(selected_year, 2, 1)
+            previous_month = date(selected_year - 1, 12, 1)
+        else:
+            next_month = date(selected_year, selected_month + 1, 1)
+            previous_month = date(selected_year, selected_month - 1, 1)
+
+        calendar_days = _month_calendar_days(selected_year, selected_month)
+        real_days = [day for day in calendar_days if day]
+        overrides = WorkingDayOverride.query.filter(
+            WorkingDayOverride.day >= month_start,
+            WorkingDayOverride.day < next_month,
+        ).all()
+        overrides_by_day = {override.day: override for override in overrides}
+        day_statuses = {day: _working_day_status(day, overrides_by_day) for day in real_days}
+
+        return render_template(
+            "manage_working_days.html",
+            calendar_days=calendar_days,
+            day_statuses=day_statuses,
+            month_label=month_start.strftime("%B %Y"),
+            selected_year=selected_year,
+            selected_month=selected_month,
+            previous_month=previous_month,
+            next_month=next_month,
         )
 
     @app.route("/leave-limits", methods=["GET", "POST"])

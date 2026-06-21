@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}{{ _('Working day calendar · CSUPOR Portal') }}{% endblock %}
+{% block content %}
+<section class="section-heading">
+  <div>
+    <span class="eyebrow">{{ _('HR calendar') }}</span>
+    <h2>{{ _('Manage working days and holidays') }}</h2>
+    <p>{{ _('Defaults come from the Hungarian work calendar. Override specific dates when Saturdays become working days or ordinary weekdays become holidays.') }}</p>
+  </div>
+</section>
+
+<section class="leave-calendar-card">
+  <div class="calendar-toolbar">
+    <a class="button button-secondary" href="{{ url_for('manage_working_days', year=previous_month.year, month=previous_month.month) }}">← {{ previous_month.strftime('%b') }}</a>
+    <div>
+      <h2>{{ month_label }}</h2>
+      <p>{{ _('Hungary default calendar with HR overrides') }}</p>
+    </div>
+    <a class="button button-secondary" href="{{ url_for('manage_working_days', year=next_month.year, month=next_month.month) }}">{{ next_month.strftime('%b') }} →</a>
+  </div>
+
+  <div class="calendar-grid weekday-grid">
+    <div>{{ _('Mon') }}</div><div>{{ _('Tue') }}</div><div>{{ _('Wed') }}</div><div>{{ _('Thu') }}</div><div>{{ _('Fri') }}</div><div>{{ _('Sat') }}</div><div>{{ _('Sun') }}</div>
+  </div>
+  <div class="calendar-grid day-grid working-day-grid">
+    {% for day in calendar_days %}
+      {% if day %}
+        {% set status = day_statuses[day] %}
+        <article class="calendar-day working-day-card {{ 'is-working-day' if status.is_working_day else 'is-holiday' }} {{ 'is-override' if status.is_override else '' }}">
+          <div class="working-day-header">
+            <time datetime="{{ day.isoformat() }}">{{ day.day }}</time>
+            <span class="status-pill {{ 'status-approved' if status.is_working_day else 'status-rejected' }}">{{ _('Working day') if status.is_working_day else _('Holiday') }}</span>
+          </div>
+          <small class="help-text">
+            {{ _('Default: working day') if status.default_is_working_day else _('Default: holiday') }}{% if status.is_override %} · {{ _('HR override') }}{% endif %}
+          </small>
+          {% if status.note %}<p class="muted">{{ status.note }}</p>{% endif %}
+          <form method="post" class="working-day-actions">
+            <input type="hidden" name="day" value="{{ day.isoformat() }}">
+            <input type="hidden" name="year" value="{{ selected_year }}">
+            <input type="hidden" name="month" value="{{ selected_month }}">
+            <input name="note" placeholder="{{ _('Optional note') }}" value="{{ status.note or '' }}">
+            <div class="button-row">
+              <button type="submit" name="action" value="working" class="button-secondary">{{ _('Set working') }}</button>
+              <button type="submit" name="action" value="holiday" class="button-secondary">{{ _('Set holiday') }}</button>
+              {% if status.is_override %}<button type="submit" name="action" value="reset" class="button-secondary">{{ _('Reset') }}</button>{% endif %}
+            </div>
+          </form>
+        </article>
+      {% else %}
+        <div class="calendar-day empty-day" aria-hidden="true"></div>
+      {% endif %}
+    {% endfor %}
+  </div>
+</section>
+
+<style>
+  .working-day-grid .calendar-day { min-height: 12rem; }
+  .working-day-card { display: flex; flex-direction: column; gap: .55rem; }
+  .working-day-card.is-holiday { background: #fff7ed; border-color: #fed7aa; }
+  .working-day-card.is-working-day { background: #f0fdf4; border-color: #bbf7d0; }
+  .working-day-card.is-override { box-shadow: inset 0 0 0 2px rgba(37, 99, 235, .22); }
+  .working-day-header, .button-row { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; justify-content: space-between; }
+  .working-day-actions { display: grid; gap: .45rem; margin-top: auto; }
+  .working-day-actions input { width: 100%; }
+  .button-row .button-secondary { padding: .45rem .65rem; }
+</style>
+{% endblock %}

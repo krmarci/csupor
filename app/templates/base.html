@@ -759,7 +759,7 @@
           {% if current_user.privilege.value in ['hr', 'ceo'] or can_manage_leaves_global %}
           <details class="nav-group">
             <summary
-              class="nav-link {% if request.endpoint in ['manage_user_profiles', 'edit_user_profile', 'manage_privileges', 'manage_contracts', 'create_contract', 'edit_contract', 'manage_legal_entities', 'manage_places_of_work', 'manage_leadership', 'manage_leave_limits', 'manage_leaves'] %}active{% endif %}"
+              class="nav-link {% if request.endpoint in ['manage_user_profiles', 'edit_user_profile', 'manage_privileges', 'manage_contracts', 'create_contract', 'edit_contract', 'manage_legal_entities', 'manage_places_of_work', 'manage_leadership', 'manage_leave_limits', 'manage_working_days', 'manage_leaves'] %}active{% endif %}"
             >
               {{ _("Management") }}
             </summary>
@@ -768,6 +768,7 @@
               {% if current_user.privilege.value in ['hr', 'ceo'] %}<a class="nav-link {% if request.endpoint == 'manage_privileges' %}active{% endif %}" href="{{ url_for('manage_privileges') }}">{{ _("Privileges") }}</a>{% endif %}
               {% if current_user.privilege.value in ['hr', 'ceo'] %}<a class="nav-link {% if request.endpoint in ['manage_contracts', 'create_contract', 'edit_contract'] %}active{% endif %}" href="{{ url_for('manage_contracts') }}">{{ _("Contracts") }}</a>{% endif %}
               {% if current_user.privilege.value in ['hr', 'ceo'] %}<a class="nav-link {% if request.endpoint == 'manage_leave_limits' %}active{% endif %}" href="{{ url_for('manage_leave_limits') }}">{{ _("Leave limits") }}</a>{% endif %}
+              {% if current_user.privilege.value in ['hr', 'ceo'] %}<a class="nav-link {% if request.endpoint == 'manage_working_days' %}active{% endif %}" href="{{ url_for('manage_working_days') }}">{{ _("Working days") }}</a>{% endif %}
               {% if can_manage_leaves_global %}<a class="nav-link {% if request.endpoint == 'manage_leaves' %}active{% endif %}" href="{{ url_for('manage_leaves') }}">{{ _("Leave approvals") }}</a>{% endif %}
               {% if current_user.privilege.value in ['hr', 'ceo'] %}<a class="nav-link {% if request.endpoint == 'manage_leadership' %}active{% endif %}" href="{{ url_for('manage_leadership') }}">{{ _("Leadership") }}</a>{% endif %}
               {% if current_user.privilege.value in ['hr', 'ceo'] %}<a class="nav-link {% if request.endpoint == 'manage_legal_entities' %}active{% endif %}" href="{{ url_for('manage_legal_entities') }}">{{ _("Legal entities") }}</a>{% endif %}
