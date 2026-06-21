@@ -726,7 +726,7 @@ msgstr "Szo"
 
 #: app/templates/leaves.html:95
 msgid "Sun"
-msgstr "TAJ-szám"
+msgstr "V"
 
 #: app/templates/leaves.html:104
 msgid "Select %(month)s %(day)s, %(year)s as a leave date"
@@ -1052,7 +1052,7 @@ msgstr "Szűrők alkalmazása"
 
 #: app/templates/manage_leaves.html:55
 msgid "Reset"
-msgstr "Elutasítás"
+msgstr "Visszaállítás"
 
 #: app/templates/manage_leaves.html:64
 msgid "Leave requests"
