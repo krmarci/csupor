@@ -14,6 +14,18 @@ Flask-based login and personnel data management system backed by MySQL schema `c
 - Educational qualifications management (multiple records supported).
 - Optional teacher professional exam record.
 
+## Internationalization
+
+The application is prepared for Flask-Babel based translations. English (`en`) is the default locale and Hungarian (`hu`) is registered as an additional supported locale. Users can switch languages from the header language selector; the selected locale is stored in the session and otherwise falls back to the browser's `Accept-Language` header.
+
+Translation extraction is configured in `babel.cfg`. After adding or updating translatable strings, generate and compile catalogs with Flask-Babel tooling, for example:
+
+```bash
+pybabel extract -F babel.cfg -o messages.pot .
+pybabel init -i messages.pot -d app/translations -l hu
+pybabel compile -d app/translations
+```
+
 
 ## SQL schema file
 

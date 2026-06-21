@@ -1,17 +1,17 @@
 {% extends "base.html" %}
-{% block title %}Leadership · CSUPOR Portal{% endblock %}
+{% block title %}{{ _('Leadership · CSUPOR Portal') }}{% endblock %}
 {% block content %}
 <section class="dashboard-grid">
   <section class="form-shell span-5">
-    <div class="section-heading"><h2>{{ "Edit leadership" if editing_leadership else "Add leadership" }}</h2></div>
+    <div class="section-heading"><h2>{{ _('Edit leadership') if editing_leadership else _('Add leadership') }}</h2></div>
     <form method="post" class="grid-form">
       {% if editing_leadership %}
       <input type="hidden" name="leadership_id" value="{{ editing_leadership.id }}">
       {% endif %}
 
-      <label for="legal_entity_id">Legal entity *</label>
+      <label for="legal_entity_id">{{ _('Legal entity *') }}</label>
       <select id="legal_entity_id" name="legal_entity_id" required>
-        <option value="">Select legal entity</option>
+        <option value="">{{ _('Select legal entity') }}</option>
         {% for entity in legal_entities %}
         <option
           value="{{ entity.id }}"
@@ -22,9 +22,9 @@
         {% endfor %}
       </select>
 
-      <label for="contract_id">Contract *</label>
+      <label for="contract_id">{{ _('Contract *') }}</label>
       <select id="contract_id" name="contract_id" required>
-        <option value="">Select contract</option>
+        <option value="">{{ _('Select contract') }}</option>
         {% for contract in contracts %}
         <option
           value="{{ contract.id }}"
@@ -35,14 +35,14 @@
         {% endfor %}
       </select>
 
-      <label for="position">Position *</label>
+      <label for="position">{{ _('Position *') }}</label>
       <select id="position" name="position" required>
-        <option value="">Select leadership position</option>
-        <option value="principal" {% if editing_leadership and editing_leadership.position.value == "principal" %}selected{% endif %}>Principal</option>
-        <option value="deputy principal" {% if editing_leadership and editing_leadership.position.value == "deputy principal" %}selected{% endif %}>Deputy principal</option>
+        <option value="">{{ _('Select leadership position') }}</option>
+        <option value="principal" {% if editing_leadership and editing_leadership.position.value == "principal" %}selected{% endif %}>{{ _('Principal') }}</option>
+        <option value="deputy principal" {% if editing_leadership and editing_leadership.position.value == "deputy principal" %}selected{% endif %}>{{ _('Deputy principal') }}</option>
       </select>
 
-      <label for="start_date">Start date *</label>
+      <label for="start_date">{{ _("Start date *") }}</label>
       <input
         id="start_date"
         name="start_date"
@@ -51,7 +51,7 @@
         required
       >
 
-      <label for="end_date">End date</label>
+      <label for="end_date">{{ _("End date") }}</label>
       <input
         id="end_date"
         name="end_date"
@@ -60,9 +60,9 @@
       >
 
       <div class="button-row">
-        <button type="submit">{{ "Update leadership" if editing_leadership else "Save leadership" }}</button>
+        <button type="submit">{{ _('Update leadership') if editing_leadership else _('Save leadership') }}</button>
         {% if editing_leadership %}
-        <a class="button button-secondary" href="{{ url_for('manage_leadership') }}">Cancel edit</a>
+        <a class="button button-secondary" href="{{ url_for('manage_leadership') }}">{{ _('Cancel edit') }}</a>
         {% endif %}
       </div>
     </form>
@@ -71,8 +71,8 @@
   <section class="table-card span-7">
     <div class="section-heading">
       <div>
-        <h2>Existing leadership positions</h2>
-        <p>Manage leadership assignments by legal entity and contract.</p>
+        <h2>{{ _('Existing leadership positions') }}</h2>
+        <p>{{ _('Manage leadership assignments by legal entity and contract.') }}</p>
       </div>
     </div>
 
@@ -80,12 +80,12 @@
       <table>
         <thead>
           <tr>
-            <th>Legal entity</th>
-            <th>Contract</th>
-            <th>Position</th>
-            <th>Start date</th>
-            <th>End date</th>
-            <th>Edit</th>
+            <th>{{ _('Legal entity') }}</th>
+            <th>{{ _('Contract') }}</th>
+            <th>{{ _('Position') }}</th>
+            <th>{{ _('Start date') }}</th>
+            <th>{{ _("End date") }}</th>
+            <th>{{ _('Edit') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -97,12 +97,12 @@
             <td>{{ leadership.start_date }}</td>
             <td>{{ leadership.end_date or '—' }}</td>
             <td>
-              <a class="button button-secondary" href="{{ url_for('manage_leadership', edit=leadership.id) }}">Edit</a>
+              <a class="button button-secondary" href="{{ url_for('manage_leadership', edit=leadership.id) }}">{{ _('Edit') }}</a>
             </td>
           </tr>
           {% else %}
           <tr>
-            <td colspan="6">No leadership records have been added yet.</td>
+            <td colspan="6">{{ _('No leadership records have been added yet.') }}</td>
           </tr>
           {% endfor %}
         </tbody>

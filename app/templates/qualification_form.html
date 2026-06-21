@@ -1,57 +1,57 @@
 {% extends "base.html" %}
-{% block title %}Add Qualification · CSUPOR Portal{% endblock %}
+{% block title %}{{ _('Add Qualification · CSUPOR Portal') }}{% endblock %}
 {% block content %}
 <section class="form-page">
   <aside class="form-sidebar">
-    <span class="eyebrow">Academic history</span>
-    <h2>Record an educational qualification.</h2>
+    <span class="eyebrow">{{ _('Academic history') }}</span>
+    <h2>{{ _('Record an educational qualification.') }}</h2>
     <p>
       Add diplomas, certifications, or degrees with a clearer layout that makes each field easier to review before saving.
     </p>
     <ul>
-      <li>Use the exact degree or certificate number from the issuing institution.</li>
-      <li>Mark only one qualification as the highest to keep records consistent.</li>
-      <li>Enter the year obtained as a numeric year.</li>
+      <li>{{ _('Use the exact degree or certificate number from the issuing institution.') }}</li>
+      <li>{{ _('Mark only one qualification as the highest to keep records consistent.') }}</li>
+      <li>{{ _('Enter the year obtained as a numeric year.') }}</li>
     </ul>
   </aside>
 
   <section class="form-shell">
     <div class="section-heading">
       <div>
-        <h2>Add educational qualification</h2>
-        <p>Save a new qualification and optionally flag it as your highest achievement.</p>
+        <h2>{{ _('Add educational qualification') }}</h2>
+        <p>{{ _('Save a new qualification and optionally flag it as your highest achievement.') }}</p>
       </div>
     </div>
     <form method="post">
       <div class="form-grid">
         <div class="field">
-          <label for="level_or_type">Level or type</label>
-          <input id="level_or_type" name="level_or_type" required placeholder="Bachelor, Master, Certificate...">
+          <label for="level_or_type">{{ _('Level or type') }}</label>
+          <input id="level_or_type" name="level_or_type" required placeholder="{{ _('Bachelor, Master, Certificate...') }}">
         </div>
         <div class="field">
-          <label for="qualification_name">Qualification name</label>
+          <label for="qualification_name">{{ _('Qualification name') }}</label>
           <input id="qualification_name" name="qualification_name" required>
         </div>
         <div class="field field-full">
-          <label for="institution_name">Institution name</label>
+          <label for="institution_name">{{ _('Institution name') }}</label>
           <input id="institution_name" name="institution_name" required>
         </div>
         <div class="field">
-          <label for="degree_number">Degree number</label>
+          <label for="degree_number">{{ _('Degree number') }}</label>
           <input id="degree_number" name="degree_number" required>
         </div>
         <div class="field">
-          <label for="year_obtained">Year obtained</label>
+          <label for="year_obtained">{{ _('Year obtained') }}</label>
           <input id="year_obtained" type="number" name="year_obtained" required>
         </div>
         <label class="checkbox-field field-full" for="highest">
           <input id="highest" type="checkbox" name="highest">
-          <span>Mark this as my highest qualification</span>
+          <span>{{ _('Mark this as my highest qualification') }}</span>
         </label>
       </div>
       <div class="button-row">
-        <button type="submit">Save qualification</button>
-        <a class="button button-secondary" href="{{ url_for('dashboard') }}">Back to dashboard</a>
+        <button type="submit">{{ _('Save qualification') }}</button>
+        <a class="button button-secondary" href="{{ url_for('dashboard') }}">{{ _("Back to dashboard") }}</a>
       </div>
     </form>
   </section>

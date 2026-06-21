@@ -1,10 +1,13 @@
 from datetime import date, datetime
 from functools import wraps
+from urllib.parse import urlsplit
 
-from flask import abort, flash, redirect, render_template, request, url_for
+from flask import abort, flash, redirect, render_template, request, session, url_for
+from flask_babel import _
 from flask_login import current_user, login_required, login_user, logout_user
 
-from . import db
+from . import SUPPORTED_LOCALES, db, get_locale
+
 from .models import (
     Contract,
     ContractLeaveLimit,
@@ -95,8 +98,8 @@ def _profile_completion_percentage(profile: UserProfile | None) -> int:
 def _profile_status_label(profile: UserProfile | None) -> str:
     completion_percentage = _profile_completion_percentage(profile)
     if completion_percentage == 100:
-        return "Complete"
-    return f"{completion_percentage}% complete"
+        return _("Complete")
+    return _("%(percent)s%% complete", percent=completion_percentage)
 
 
 def _normalize_optional_text(value: str | None) -> str | None:
@@ -638,8 +641,28 @@ def privilege_assignment_required(view_func):
 
 def init_routes(app):
     @app.context_processor
-    def inject_leave_management_access():
-        return {"can_manage_leaves_global": _can_manage_leaves(current_user)}
+    def inject_global_template_context():
+        return {
+            "can_manage_leaves_global": _can_manage_leaves(current_user),
+            "current_locale": get_locale(),
+            "supported_locales": SUPPORTED_LOCALES,
+        }
+
+
+    @app.route("/language", methods=["POST"])
+    def set_language():
+        locale = request.form.get("locale", "").strip()
+        if locale in SUPPORTED_LOCALES:
+            session["locale"] = locale
+            flash(_("Language updated."), "success")
+        else:
+            flash(_("Selected language is not supported."), "error")
+
+        next_url = request.form.get("next") or request.referrer or url_for("index")
+        parsed_next_url = urlsplit(next_url)
+        if parsed_next_url.netloc and parsed_next_url.netloc != request.host:
+            next_url = url_for("index")
+        return redirect(next_url)
 
     @app.route("/")
     def index():
