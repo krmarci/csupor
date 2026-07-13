@@ -478,7 +478,11 @@ def _paid_leave_remaining_days(contract: Contract, year: int) -> int:
     return max(_paid_leave_available_days(contract, year) - _paid_leave_used_days(contract, year), 0)
 
 
-def _leave_usage_summary(contract: Contract, year: int) -> list[dict[str, object]]:
+def _leave_usage_summary(
+    contract: Contract,
+    year: int,
+    categories: list[LeaveRequestCategory] | None = None,
+) -> list[dict[str, object]]:
     year_start, year_end = _leave_request_year_bounds(year)
     used_by_category = {category: 0 for category in LeaveRequestCategory}
     requests = LeaveRequest.query.filter(
@@ -489,6 +493,7 @@ def _leave_usage_summary(contract: Contract, year: int) -> list[dict[str, object
     ).all()
     for leave_request in requests:
         used_by_category[leave_request.category] += _leave_request_used_days_in_year(leave_request, year)
+    summary_categories = categories if categories is not None else list(LeaveRequestCategory)
     return [
         {
             "category": category,
@@ -501,7 +506,7 @@ def _leave_usage_summary(contract: Contract, year: int) -> list[dict[str, object
             if category == LeaveRequestCategory.paid_leave
             else None,
         }
-        for category in LeaveRequestCategory
+        for category in summary_categories
     ]
 
 
@@ -1110,7 +1115,15 @@ def init_routes(app):
             next_month = date(selected_year, selected_month + 1, 1)
             previous_month = date(selected_year, selected_month - 1, 1)
         month_requests = []
-        leave_usage_summary = _leave_usage_summary(selected_contract, selected_year) if selected_contract else []
+        leave_usage_summary = (
+            _leave_usage_summary(
+                selected_contract,
+                selected_year,
+                [item["category"] for item in available_categories],
+            )
+            if selected_contract
+            else []
+        )
         if selected_contract:
             query_end = next_month
             month_requests = (
