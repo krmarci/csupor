@@ -22,20 +22,6 @@
 {% if active_contracts %}
 <section class="leave-workspace dashboard-grid">
   <aside class="leave-sidebar span-5">
-    <form id="contract-picker" method="get" class="leave-card contract-picker-card">
-      <label for="contract_id">{{ _("Assign leaves to contract") }}</label>
-      <select id="contract_id" name="contract_id" onchange="this.form.submit()">
-        {% for contract in active_contracts %}
-        <option value="{{ contract.id }}" {% if selected_contract and selected_contract.id == contract.id %}selected{% endif %}>
-          {{ contract.job_title }} · {{ contract.start_date }} → {{ contract.end_date or 'ongoing' }}
-        </option>
-        {% endfor %}
-      </select>
-      <input type="hidden" name="year" value="{{ selected_year }}">
-      <input type="hidden" name="month" value="{{ selected_month }}">
-      <small class="help-text">{{ _("Your current active contract is selected by default. The calendar refreshes immediately when you choose another active contract.") }}</small>
-    </form>
-
     <form method="post" class="leave-card leave-request-form">
       <input type="hidden" name="contract_id" value="{{ selected_contract.id }}">
       <input type="hidden" name="year" value="{{ selected_year }}">
@@ -79,6 +65,53 @@
 
       <button type="submit" name="action" value="submit">{{ _("Submit request") }}</button>
     </form>
+
+    <section class="leave-card leave-usage-card">
+      <div class="section-heading compact-heading">
+        <div>
+          <h2>{{ _("Leave used in %(year)s", year=selected_year) }}</h2>
+          <p>{{ _("Pending approval, approved, and pending cancellation requests are included.") }}</p>
+        </div>
+      </div>
+      <table class="leave-usage-table">
+        <thead>
+          <tr>
+            <th>{{ _("Leave type") }}</th>
+            <th>{{ _("Used") }}</th>
+            <th>{{ _("Available") }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in leave_usage_summary %}
+          <tr>
+            <td>{{ _(item.label) }}</td>
+            <td>{{ item.used_days }}</td>
+            <td>
+              {% if item.available_days is not none %}
+                {{ item.remaining_days }} / {{ item.available_days }}
+              {% else %}
+                —
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+    <form id="contract-picker" method="get" class="leave-card contract-picker-card">
+      <label for="contract_id">{{ _("Assign leaves to contract") }}</label>
+      <select id="contract_id" name="contract_id" onchange="this.form.submit()">
+        {% for contract in active_contracts %}
+        <option value="{{ contract.id }}" {% if selected_contract and selected_contract.id == contract.id %}selected{% endif %}>
+          {{ contract.job_title }} · {{ contract.start_date }} → {{ contract.end_date or 'ongoing' }}
+        </option>
+        {% endfor %}
+      </select>
+      <input type="hidden" name="year" value="{{ selected_year }}">
+      <input type="hidden" name="month" value="{{ selected_month }}">
+      <small class="help-text">{{ _("Your current active contract is selected by default. The calendar refreshes immediately when you choose another active contract.") }}</small>
+    </form>
+
   </aside>
 
   <section class="leave-calendar-card span-7">
@@ -253,9 +286,6 @@
     gap: 10px;
   }
 
-  .compact-heading {
-    margin-bottom: 0;
-  }
 
   .date-pair {
     display: grid;

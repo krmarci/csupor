@@ -63,9 +63,47 @@
         </div>
         <a class="button button-primary" href="{{ url_for('leaves') }}">{{ _("Open leave calendar") }}</a>
       </div>
+      {% if dashboard_leave_contract %}
+      <div class="leave-usage-dashboard">
+        <div class="section-heading compact-heading">
+          <div>
+            <h3>{{ _("Leave used in %(year)s", year=dashboard_leave_usage_year) }}</h3>
+            <p>{{ dashboard_leave_contract.job_title }} · {{ dashboard_leave_contract.employer.name if dashboard_leave_contract.employer else _("Employer not set") }}</p>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="leave-usage-table">
+            <thead>
+              <tr>
+                <th>{{ _("Leave type") }}</th>
+                <th>{{ _("Used") }}</th>
+                <th>{{ _("Available") }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in dashboard_leave_usage_summary %}
+              <tr>
+                <td>{{ _(item.label) }}</td>
+                <td>{{ item.used_days }}</td>
+                <td>
+                  {% if item.available_days is not none %}
+                    {{ item.remaining_days }} / {{ item.available_days }}
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <p class="help-text">{{ _("Pending approval, approved, and pending cancellation requests are included.") }}</p>
+      </div>
+      {% else %}
       <div class="empty-state">
         {{ _("Leave requests are approved by both a CEO user and an active principal or deputy principal for the contract's legal entity.") }}
       </div>
+      {% endif %}
     </section>
 
     {% if can_manage_leaves %}

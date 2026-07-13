@@ -61,6 +61,7 @@ class LeaveRequestCategory(enum.Enum):
     childcare_sickness_benefit = "childcare sickness benefit"
     childbirth_leave = "childbirth leave"
     exemption_from_obligation_to_work = "exemption from obligation to work"
+    unpaid_leave = "unpaid leave"
 
 
 class LeaveRequestStatus(enum.Enum):
