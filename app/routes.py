@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from functools import wraps
 from urllib.parse import urlsplit
 
@@ -342,7 +342,170 @@ def _has_positive_leave_limit(contract: Contract, leave_types: set[LeaveType]) -
     return any(limit.leave_type in leave_types and limit.limit_days > 0 for limit in contract.leave_limits)
 
 
-def _available_leave_request_categories(user: User, contract: Contract) -> list[dict[str, object]]:
+PAID_LEAVE_LIMIT_TYPES = {
+    LeaveType.basic_leave,
+    LeaveType.supplementary_leave_based_on_age,
+    LeaveType.supplementary_leave_for_children,
+    LeaveType.supplementary_leave_for_children_with_disability,
+    LeaveType.supplementary_leave_for_young_employees,
+    LeaveType.supplementary_leave_for_reduced_working_capacity,
+    LeaveType.leave_carried_over_from_previous_year,
+    LeaveType.parental_leave,
+    LeaveType.paternity_leave,
+    LeaveType.supplementary_leave_for_birth_of_grandchild,
+    LeaveType.supplementary_leave_for_first_marriage,
+}
+
+
+def _iter_dates(start_date: date, end_date: date):
+    current_day = start_date
+    while current_day <= end_date:
+        yield current_day
+        current_day += timedelta(days=1)
+
+
+def _working_day_overrides(start_date: date, end_date: date) -> dict[date, WorkingDayOverride]:
+    return {
+        override.day: override
+        for override in WorkingDayOverride.query.filter(
+            WorkingDayOverride.day >= start_date,
+            WorkingDayOverride.day <= end_date,
+        ).all()
+    }
+
+
+def _is_working_day(day: date, overrides_by_day: dict[date, WorkingDayOverride] | None = None) -> bool:
+    return bool(_working_day_status(day, overrides_by_day)["is_working_day"])
+
+
+def _calendar_day_count(start_date: date, end_date: date) -> int:
+    return (end_date - start_date).days + 1
+
+
+def _working_day_count(start_date: date, end_date: date) -> int:
+    overrides_by_day = _working_day_overrides(start_date, end_date)
+    return sum(1 for day in _iter_dates(start_date, end_date) if _is_working_day(day, overrides_by_day))
+
+
+def _leave_request_year_bounds(year: int) -> tuple[date, date]:
+    return date(year, 1, 1), date(year, 12, 31)
+
+
+def _leave_limit_days_for_year(contract: Contract, leave_types: set[LeaveType], year: int) -> int:
+    year_start, year_end = _leave_request_year_bounds(year)
+    total = 0
+    for limit in contract.leave_limits:
+        if limit.leave_type not in leave_types or limit.limit_days <= 0:
+            continue
+        if limit.period_start is not None or limit.period_end is not None:
+            period_start = limit.period_start or year_start
+            period_end = limit.period_end or year_end
+            if period_start > year_end or period_end < year_start:
+                continue
+        elif limit.calendar_year != year:
+            continue
+        total += limit.limit_days
+    return total
+
+
+def _leave_request_used_days_in_year(leave_request: LeaveRequest, year: int) -> int:
+    year_start, year_end = _leave_request_year_bounds(year)
+    request_start = max(leave_request.start_date, year_start)
+    request_end = min(_leave_request_end_date(leave_request), year_end)
+    if request_start > request_end:
+        return 0
+    if leave_request.category in {
+        LeaveRequestCategory.paid_leave,
+        LeaveRequestCategory.exemption_from_obligation_to_work,
+        LeaveRequestCategory.unpaid_leave,
+    }:
+        return _working_day_count(request_start, request_end)
+    if leave_request.category == LeaveRequestCategory.health_leave:
+        sick_available = _leave_limit_days_for_year(leave_request.contract, {LeaveType.sick_leave}, year)
+        earlier_sick_used = _health_leave_sick_days_used_before_request(leave_request, year)
+        working_days = _working_day_count(request_start, request_end)
+        sick_days = min(max(sick_available - earlier_sick_used, 0), working_days)
+        return sick_days + max(_calendar_day_count(request_start, request_end) - sick_days, 0)
+    if leave_request.category in {
+        LeaveRequestCategory.childcare_sickness_benefit,
+        LeaveRequestCategory.childbirth_leave,
+    }:
+        return _calendar_day_count(request_start, request_end)
+    return 0
+
+
+def _health_leave_sick_days_used_before_request(leave_request: LeaveRequest, year: int) -> int:
+    year_start, year_end = _leave_request_year_bounds(year)
+    query = LeaveRequest.query.filter(
+        LeaveRequest.user_id == leave_request.user_id,
+        LeaveRequest.contract_id == leave_request.contract_id,
+        LeaveRequest.category == LeaveRequestCategory.health_leave,
+        LeaveRequest.status.in_(BLOCKING_LEAVE_REQUEST_STATUSES),
+        LeaveRequest.start_date <= year_end,
+        db.or_(LeaveRequest.end_date.is_(None), LeaveRequest.end_date >= year_start),
+    )
+    if leave_request.id is not None:
+        query = query.filter(LeaveRequest.id != leave_request.id)
+    earlier_requests = query.order_by(LeaveRequest.start_date.asc(), LeaveRequest.id.asc()).all()
+    used = 0
+    for earlier_request in earlier_requests:
+        if (earlier_request.start_date, earlier_request.id or 0) >= (leave_request.start_date, leave_request.id or 0):
+            continue
+        request_start = max(earlier_request.start_date, year_start)
+        request_end = min(_leave_request_end_date(earlier_request), year_end)
+        if request_start <= request_end:
+            used += _working_day_count(request_start, request_end)
+    return min(used, _leave_limit_days_for_year(leave_request.contract, {LeaveType.sick_leave}, year))
+
+
+def _paid_leave_available_days(contract: Contract, year: int) -> int:
+    return _leave_limit_days_for_year(contract, PAID_LEAVE_LIMIT_TYPES, year)
+
+
+def _paid_leave_used_days(contract: Contract, year: int) -> int:
+    year_start, year_end = _leave_request_year_bounds(year)
+    requests = LeaveRequest.query.filter(
+        LeaveRequest.contract_id == contract.id,
+        LeaveRequest.category == LeaveRequestCategory.paid_leave,
+        LeaveRequest.status.in_(BLOCKING_LEAVE_REQUEST_STATUSES),
+        LeaveRequest.start_date <= year_end,
+        db.or_(LeaveRequest.end_date.is_(None), LeaveRequest.end_date >= year_start),
+    ).all()
+    return sum(_leave_request_used_days_in_year(leave_request, year) for leave_request in requests)
+
+
+def _paid_leave_remaining_days(contract: Contract, year: int) -> int:
+    return max(_paid_leave_available_days(contract, year) - _paid_leave_used_days(contract, year), 0)
+
+
+def _leave_usage_summary(contract: Contract, year: int) -> list[dict[str, object]]:
+    year_start, year_end = _leave_request_year_bounds(year)
+    used_by_category = {category: 0 for category in LeaveRequestCategory}
+    requests = LeaveRequest.query.filter(
+        LeaveRequest.contract_id == contract.id,
+        LeaveRequest.status.in_(BLOCKING_LEAVE_REQUEST_STATUSES),
+        LeaveRequest.start_date <= year_end,
+        db.or_(LeaveRequest.end_date.is_(None), LeaveRequest.end_date >= year_start),
+    ).all()
+    for leave_request in requests:
+        used_by_category[leave_request.category] += _leave_request_used_days_in_year(leave_request, year)
+    return [
+        {
+            "category": category,
+            "label": category.value.capitalize(),
+            "used_days": used_by_category[category],
+            "available_days": _paid_leave_available_days(contract, year)
+            if category == LeaveRequestCategory.paid_leave
+            else None,
+            "remaining_days": _paid_leave_remaining_days(contract, year)
+            if category == LeaveRequestCategory.paid_leave
+            else None,
+        }
+        for category in LeaveRequestCategory
+    ]
+
+
+def _available_leave_request_categories(user: User, contract: Contract, year: int | None = None) -> list[dict[str, object]]:
     categories = [
         {
             "category": LeaveRequestCategory.paid_leave,
@@ -388,6 +551,15 @@ def _available_leave_request_categories(user: User, contract: Contract) -> list[
             "end_required": False,
         }
     )
+    if year is not None and _paid_leave_remaining_days(contract, year) == 0:
+        categories.append(
+            {
+                "category": LeaveRequestCategory.unpaid_leave,
+                "label": "Unpaid leave",
+                "description": "Available once paid leave days are exhausted for the selected year.",
+                "end_required": False,
+            }
+        )
     return categories
 
 
@@ -836,19 +1008,18 @@ def init_routes(app):
                 )
 
             category_value = request.form.get("category")
-            available_categories = _available_leave_request_categories(current_user, selected_contract)
-            available_by_value = {item["category"].value: item for item in available_categories}
-            category_definition = available_by_value.get(category_value)
-            if category_definition is None:
-                flash("Please choose an available leave type.", "error")
-                return redirect(
-                    url_for("leaves", contract_id=selected_contract.id, year=selected_year, month=selected_month)
-                )
-
             start_date = parse_iso_date(request.form.get("start_date"))
             end_date = parse_iso_date(request.form.get("end_date"))
             if start_date is None:
                 flash("Start date is required.", "error")
+                return redirect(
+                    url_for("leaves", contract_id=selected_contract.id, year=selected_year, month=selected_month)
+                )
+            available_categories = _available_leave_request_categories(current_user, selected_contract, start_date.year)
+            available_by_value = {item["category"].value: item for item in available_categories}
+            category_definition = available_by_value.get(category_value)
+            if category_definition is None:
+                flash("Please choose an available leave type.", "error")
                 return redirect(
                     url_for("leaves", contract_id=selected_contract.id, year=selected_year, month=selected_month)
                 )
@@ -891,6 +1062,19 @@ def init_routes(app):
                     url_for("leaves", contract_id=selected_contract.id, year=selected_year, month=selected_month)
                 )
 
+            if category_definition["category"] == LeaveRequestCategory.paid_leave:
+                request_end_date = end_date or start_date
+                requested_days = _working_day_count(start_date, request_end_date)
+                remaining_days = _paid_leave_remaining_days(selected_contract, start_date.year)
+                if requested_days > remaining_days:
+                    flash(
+                        f"Paid leave request needs {requested_days} available days, but only {remaining_days} remain.",
+                        "error",
+                    )
+                    return redirect(
+                        url_for("leaves", contract_id=selected_contract.id, year=selected_year, month=selected_month)
+                    )
+
             leave_request = LeaveRequest(
                 user_id=current_user.id,
                 contract_id=selected_contract.id,
@@ -913,7 +1097,7 @@ def init_routes(app):
             )
 
         available_categories = (
-            _available_leave_request_categories(current_user, selected_contract) if selected_contract else []
+            _available_leave_request_categories(current_user, selected_contract, selected_year) if selected_contract else []
         )
         month_start = date(selected_year, selected_month, 1)
         if selected_month == 12:
@@ -926,6 +1110,7 @@ def init_routes(app):
             next_month = date(selected_year, selected_month + 1, 1)
             previous_month = date(selected_year, selected_month - 1, 1)
         month_requests = []
+        leave_usage_summary = _leave_usage_summary(selected_contract, selected_year) if selected_contract else []
         if selected_contract:
             query_end = next_month
             month_requests = (
@@ -954,6 +1139,7 @@ def init_routes(app):
             previous_month=previous_month,
             next_month=next_month,
             leave_request_overlaps_day=_leave_request_overlaps_day,
+            leave_usage_summary=leave_usage_summary,
         )
 
     @app.route("/users/privileges", methods=["GET", "POST"])

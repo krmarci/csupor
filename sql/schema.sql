@@ -266,7 +266,8 @@ CREATE TABLE IF NOT EXISTS leave_requests (
     'health leave',
     'childcare sickness benefit',
     'childbirth leave',
-    'exemption from obligation to work'
+    'exemption from obligation to work',
+    'unpaid leave'
   ) NOT NULL,
   start_date DATE NOT NULL,
   end_date DATE NULL,
