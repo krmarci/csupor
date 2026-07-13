@@ -931,6 +931,20 @@ def init_routes(app):
     @app.route("/dashboard")
     @login_required
     def dashboard():
+        today = date.today()
+        current_contract = _current_active_contract(current_user)
+        dashboard_leave_usage_summary = []
+        if current_contract:
+            dashboard_leave_categories = [
+                item["category"]
+                for item in _available_leave_request_categories(current_user, current_contract, today.year)
+            ]
+            dashboard_leave_usage_summary = _leave_usage_summary(
+                current_contract,
+                today.year,
+                dashboard_leave_categories,
+            )
+
         return render_template(
             "dashboard.html",
             can_manage_privileges=_can_manage_privileges(current_user),
@@ -943,6 +957,9 @@ def init_routes(app):
             if _can_manage_leaves(current_user)
             else [],
             profile_status_label=_profile_status_label(current_user.profile),
+            dashboard_leave_contract=current_contract,
+            dashboard_leave_usage_summary=dashboard_leave_usage_summary,
+            dashboard_leave_usage_year=today.year,
         )
 
     @app.route("/leaves", methods=["GET", "POST"])

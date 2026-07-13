@@ -22,20 +22,6 @@
 {% if active_contracts %}
 <section class="leave-workspace dashboard-grid">
   <aside class="leave-sidebar span-5">
-    <form id="contract-picker" method="get" class="leave-card contract-picker-card">
-      <label for="contract_id">{{ _("Assign leaves to contract") }}</label>
-      <select id="contract_id" name="contract_id" onchange="this.form.submit()">
-        {% for contract in active_contracts %}
-        <option value="{{ contract.id }}" {% if selected_contract and selected_contract.id == contract.id %}selected{% endif %}>
-          {{ contract.job_title }} · {{ contract.start_date }} → {{ contract.end_date or 'ongoing' }}
-        </option>
-        {% endfor %}
-      </select>
-      <input type="hidden" name="year" value="{{ selected_year }}">
-      <input type="hidden" name="month" value="{{ selected_month }}">
-      <small class="help-text">{{ _("Your current active contract is selected by default. The calendar refreshes immediately when you choose another active contract.") }}</small>
-    </form>
-
     <form method="post" class="leave-card leave-request-form">
       <input type="hidden" name="contract_id" value="{{ selected_contract.id }}">
       <input type="hidden" name="year" value="{{ selected_year }}">
@@ -112,6 +98,19 @@
         </tbody>
       </table>
     </section>
+    <form id="contract-picker" method="get" class="leave-card contract-picker-card">
+      <label for="contract_id">{{ _("Assign leaves to contract") }}</label>
+      <select id="contract_id" name="contract_id" onchange="this.form.submit()">
+        {% for contract in active_contracts %}
+        <option value="{{ contract.id }}" {% if selected_contract and selected_contract.id == contract.id %}selected{% endif %}>
+          {{ contract.job_title }} · {{ contract.start_date }} → {{ contract.end_date or 'ongoing' }}
+        </option>
+        {% endfor %}
+      </select>
+      <input type="hidden" name="year" value="{{ selected_year }}">
+      <input type="hidden" name="month" value="{{ selected_month }}">
+      <small class="help-text">{{ _("Your current active contract is selected by default. The calendar refreshes immediately when you choose another active contract.") }}</small>
+    </form>
 
   </aside>
 
@@ -287,9 +286,6 @@
     gap: 10px;
   }
 
-  .compact-heading {
-    margin-bottom: 0;
-  }
 
   .date-pair {
     display: grid;
@@ -480,27 +476,6 @@
       padding: 6px 7px;
     }
   }
-  .leave-usage-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.9rem;
-  }
-
-  .leave-usage-table th,
-  .leave-usage-table td {
-    border-bottom: 1px solid #e2e8f0;
-    padding: 0.55rem 0.35rem;
-    text-align: left;
-  }
-
-  .leave-usage-table th:nth-child(2),
-  .leave-usage-table th:nth-child(3),
-  .leave-usage-table td:nth-child(2),
-  .leave-usage-table td:nth-child(3) {
-    text-align: right;
-    white-space: nowrap;
-  }
-
 </style>
 
 <script>
