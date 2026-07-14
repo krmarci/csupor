@@ -47,7 +47,6 @@
     </form>
   </section>
 
-  {% if not selected_contract %}
   <section class="form-shell span-12">
     <div class="section-heading">
       <div>
@@ -65,9 +64,15 @@
       <label for="availability_calendar_year">{{ _('Calendar year') }}</label>
       <input id="availability_calendar_year" name="calendar_year" type="number" min="1970" max="2100" value="{{ selected_year }}" required>
       <div class="button-row">
-        <button type="submit" name="action" value="open_year">
-          {{ _('Open year') }}
+        {% if is_leave_year_open %}
+        <button type="submit" name="action" value="lock_year" class="button-secondary">
+          {{ _('Lock selected year') }}
         </button>
+        {% else %}
+        <button type="submit" name="action" value="open_year">
+          {{ _('Open selected year') }}
+        </button>
+        {% endif %}
       </div>
     </form>
 
@@ -113,7 +118,6 @@
     <div class="empty-state">{{ _('No years have been opened yet.') }}</div>
     {% endif %}
   </section>
-  {% endif %}
 
   {% if selected_contract %}
   <section class="table-card span-12 leave-limits-card">

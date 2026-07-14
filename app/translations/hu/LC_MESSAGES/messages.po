@@ -824,7 +824,7 @@ msgstr "E-mail"
 #: app/templates/manage_leave_limits.html:112
 #: app/templates/manage_leaves.html:79
 msgid "Actions"
-msgstr "Képesítések"
+msgstr "Műveletek"
 
 #: app/templates/manage_contracts.html:29
 msgid "New contract"
@@ -1040,7 +1040,7 @@ msgstr "Szerződések"
 
 #: app/templates/manage_leaves.html:44 app/templates/manage_leaves.html:76
 msgid "Status"
-msgstr "Profil állapota"
+msgstr "Állapot"
 
 #: app/templates/manage_leaves.html:46
 msgid "All statuses"
@@ -1546,3 +1546,11 @@ msgstr "Hozzon létre erős jelszót"
 #: app/templates/register.html:41
 msgid "Back to login"
 msgstr "Vissza a bejelentkezéshez"
+
+#: app/templates/manage_leave_limits.html:68
+msgid "Lock selected year"
+msgstr "Kiválasztott év lezárása"
+
+#: app/templates/manage_leave_limits.html:72
+msgid "Open selected year"
+msgstr "Kiválasztott év megnyitása"
