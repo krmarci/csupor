@@ -667,10 +667,28 @@ def _calculated_calendar_leave_limits(contract: Contract, year: int) -> dict[Lea
     return limits
 
 
+def _store_previous_leave_limit_values(record: ContractLeaveLimit) -> None:
+    if record.imported and record.previous_limit_days is not None:
+        return
+    record.previous_limit_days = record.limit_days
+    record.previous_period_start = record.period_start
+    record.previous_period_end = record.period_end
+    record.previous_imported = record.imported
+
+
+def _clear_previous_leave_limit_values(record: ContractLeaveLimit) -> None:
+    record.previous_limit_days = None
+    record.previous_period_start = None
+    record.previous_period_end = None
+    record.previous_imported = None
+
+
 def _upsert_leave_limit(contract: Contract, year: int, leave_type: LeaveType, days: int, start: date, end: date) -> None:
     record = ContractLeaveLimit.query.filter_by(contract_id=contract.id, calendar_year=year, leave_type=leave_type).first()
     if record is None:
         record = ContractLeaveLimit(contract_id=contract.id, calendar_year=year, leave_type=leave_type)
+    else:
+        _store_previous_leave_limit_values(record)
     record.limit_days = max(days, 0)
     record.period_start = start
     record.period_end = end
@@ -735,6 +753,7 @@ def _copy_range_limits_for_year(year: int) -> None:
                     )
                 )
 
+
 def _has_imported_leave_limits_for_contract(contract: Contract, year: int) -> bool:
     return db.session.query(ContractLeaveLimit.id).filter_by(
         contract_id=contract.id,
@@ -752,14 +771,31 @@ def _has_imported_leave_limits_for_year(year: int) -> bool:
     )
 
 
+def _revert_imported_leave_limit(record: ContractLeaveLimit) -> None:
+    if record.previous_limit_days is None:
+        db.session.delete(record)
+        return
+    record.limit_days = record.previous_limit_days
+    record.period_start = record.previous_period_start
+    record.period_end = record.previous_period_end
+    record.imported = bool(record.previous_imported)
+    _clear_previous_leave_limit_values(record)
+    db.session.add(record)
+
+
 def _remove_imported_leave_limits_for_contract(contract: Contract, year: int) -> None:
-    ContractLeaveLimit.query.filter_by(contract_id=contract.id, calendar_year=year, imported=True).delete(
-        synchronize_session=False
-    )
+    records = ContractLeaveLimit.query.filter_by(
+        contract_id=contract.id,
+        calendar_year=year,
+        imported=True,
+    ).all()
+    for record in records:
+        _revert_imported_leave_limit(record)
 
 
 def _remove_imported_leave_limits_for_year(year: int) -> None:
-    ContractLeaveLimit.query.filter_by(calendar_year=year, imported=True).delete(synchronize_session=False)
+    for record in ContractLeaveLimit.query.filter_by(calendar_year=year, imported=True).all():
+        _revert_imported_leave_limit(record)
 
 
 def _leave_usage_summary(
@@ -2132,6 +2168,7 @@ def init_routes(app):
                 record.period_start = first_day
                 record.period_end = last_day
                 record.imported = False
+                _clear_previous_leave_limit_values(record)
                 db.session.add(record)
 
             available_range_leave_types = {
@@ -2271,6 +2308,7 @@ def init_routes(app):
                 elif record.leave_type not in existing_limits:
                     existing_limits[record.leave_type] = record
         leave_year = db.session.get(LeaveYear, selected_year)
+        opened_leave_years = LeaveYear.query.order_by(LeaveYear.year.desc()).all()
 
         return render_template(
             "manage_leave_limits.html",
@@ -2288,6 +2326,7 @@ def init_routes(app):
             leave_type_available_for_contract=_leave_type_available_for_contract,
             contract_display_name=_contract_display_name,
             leave_year=leave_year,
+            opened_leave_years=opened_leave_years,
             is_leave_year_open=_is_leave_year_open(selected_year),
             has_imported_year_limits=_has_imported_leave_limits_for_year(selected_year),
             has_imported_contract_limits=(

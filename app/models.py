@@ -284,6 +284,10 @@ class ContractLeaveLimit(db.Model):
     period_start = db.Column(db.Date, nullable=True)
     period_end = db.Column(db.Date, nullable=True)
     imported = db.Column(db.Boolean, nullable=False, default=False)
+    previous_limit_days = db.Column(db.Integer, nullable=True)
+    previous_period_start = db.Column(db.Date, nullable=True)
+    previous_period_end = db.Column(db.Date, nullable=True)
+    previous_imported = db.Column(db.Boolean, nullable=True)
 
     contract = db.relationship("Contract", back_populates="leave_limits")
 

@@ -65,26 +65,53 @@
       <label for="availability_calendar_year">{{ _('Calendar year') }}</label>
       <input id="availability_calendar_year" name="calendar_year" type="number" min="1970" max="2100" value="{{ selected_year }}" required>
       <div class="button-row">
-        {% if is_leave_year_open %}
-        <button type="submit" name="action" value="lock_year" class="button-secondary">
-          {{ _('Lock year') }}
-        </button>
-        {% else %}
         <button type="submit" name="action" value="open_year">
           {{ _('Open year') }}
         </button>
-        {% endif %}
-        {% if has_imported_year_limits %}
-        <button type="submit" name="action" value="undo_year_import" class="button-secondary">
-          {{ _('Revert imported default values for all contracts') }}
-        </button>
-        {% else %}
-        <button type="submit" name="action" value="load_year_defaults" class="button-secondary">
-          {{ _('Load default values for all active contracts') }}
-        </button>
-        {% endif %}
       </div>
     </form>
+
+    <h3>{{ _('Opened years') }}</h3>
+    {% if opened_leave_years %}
+    <div class="table-wrap">
+      <table class="leave-limits-table leave-years-table">
+        <thead>
+          <tr>
+            <th>{{ _('Calendar year') }}</th>
+            <th>{{ _('Status') }}</th>
+            <th>{{ _('Actions') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for opened_year in opened_leave_years %}
+          <tr>
+            <td>{{ opened_year.year }}</td>
+            <td>{{ _('Open') if opened_year.is_open else _('Locked') }}</td>
+            <td>
+              <form method="post" class="button-row">
+                <input type="hidden" name="calendar_year" value="{{ opened_year.year }}">
+                {% if opened_year.is_open %}
+                <button type="submit" name="action" value="lock_year" class="button-secondary">
+                  {{ _('Lock year') }}
+                </button>
+                {% else %}
+                <button type="submit" name="action" value="open_year">
+                  {{ _('Reopen year') }}
+                </button>
+                {% endif %}
+                <button type="submit" name="action" value="load_year_defaults" class="button-secondary">
+                  {{ _('Load default values for all employees') }}
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state">{{ _('No years have been opened yet.') }}</div>
+    {% endif %}
   </section>
   {% endif %}
 
