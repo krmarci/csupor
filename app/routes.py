@@ -2038,9 +2038,10 @@ def init_routes(app):
     @app.route("/leave-limits", methods=["GET", "POST"])
     @privilege_manager_required
     def manage_leave_limits():
-        selected_user_id = request.values.get("user_id", type=int)
-        selected_contract_id = request.values.get("contract_id", type=int)
-        selected_year = request.values.get("calendar_year", type=int) or date.today().year
+        request_data = request.form if request.method == "POST" else request.args
+        selected_user_id = request_data.get("user_id", type=int)
+        selected_contract_id = request_data.get("contract_id", type=int)
+        selected_year = request_data.get("calendar_year", type=int) or date.today().year
 
         users = User.query.order_by(User.username.asc()).all()
         all_contracts = (
