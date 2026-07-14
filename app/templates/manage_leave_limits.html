@@ -47,6 +47,33 @@
     </form>
   </section>
 
+  <section class="form-shell span-12">
+    <div class="section-heading">
+      <div>
+        <h2>{{ _('Year availability') }}</h2>
+        <p>
+          {% if is_leave_year_open %}
+          {{ selected_year }} is open for employee leave requests.
+          {% else %}
+          {{ selected_year }} is closed. Employees cannot request leave in this year until HR opens it.
+          {% endif %}
+        </p>
+      </div>
+    </div>
+    <form method="post" class="button-row">
+      <input type="hidden" name="calendar_year" value="{{ selected_year }}">
+      {% if is_leave_year_open %}
+      <button type="submit" name="action" value="undo_year_import" class="button-secondary">
+        {{ _('Undo imported values and close year') }}
+      </button>
+      {% else %}
+      <button type="submit" name="action" value="open_year">
+        {{ _('Open year and import calculated leave limits') }}
+      </button>
+      {% endif %}
+    </form>
+  </section>
+
   {% if selected_contract %}
   <section class="table-card span-12 leave-limits-card">
     <div class="section-heading">
@@ -63,6 +90,7 @@
 
     {% if is_contract_active_in_year(selected_contract, selected_year) %}
     <form method="post" class="grid-form">
+      <input type="hidden" name="action" value="save">
       <input type="hidden" name="user_id" value="{{ selected_user.id }}">
       <input type="hidden" name="contract_id" value="{{ selected_contract.id }}">
       <input type="hidden" name="calendar_year" value="{{ selected_year }}">
